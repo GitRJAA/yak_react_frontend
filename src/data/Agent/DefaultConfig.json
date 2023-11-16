@@ -1,0 +1,8 @@
+{
+    "cafe_id": "Twist",
+    "rule_names": {
+        "agent": "average_agent",
+        "restaurant": "json_menu"
+    },
+    "stream": true
+}

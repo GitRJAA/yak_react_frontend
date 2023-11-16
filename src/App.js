@@ -4,14 +4,15 @@ import Home from './pages/Home';
 import Menus from './pages/Menus';
 import Settings from './pages/Settings';
 import Avatars from './pages/Avatars';
-import NavMenu from './components/NavMenu';
+import NavMenu from './components/NavMenu/NavMenu';
 
 function App() {
   return (
     <BrowserRouter>
-    <header>
-      <NavMenu />
-    </header>
+
+      <header>
+        <NavMenu logoName='Twist Cafe'/>
+      </header>
       <main>
         <Routes>
           <Route path="/" element={<Home />} />
@@ -20,7 +21,9 @@ function App() {
           <Route path="settings" element={<Settings />} />
         </Routes>
       </main>
+
     </BrowserRouter>
+
   )
 }
 
