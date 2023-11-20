@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import useWebSocket from 'react-use-websocket';
 import RecordRTC, { StereoAudioRecorder } from "recordrtc";
 
-const WebRTCSTT = ({ onTextConverted }) => {
+const WebRTCSTT = ({ onTextConverted: onSpeechConverted }) => {
 
     let texts = {};
     let recorder = null;
@@ -70,12 +70,13 @@ const WebRTCSTT = ({ onTextConverted }) => {
                 console.log(lastMessageJSON)
                 let text = processTranscript(lastMessageJSON)
                 setTranscription(text); //display it in the UI
-                onTextConverted(text); //fire callback to send text to parent state.
+                onSpeechConverted(text); //fire callback to send text to parent state.
               }
           }
       }, [lastMessage]);
 
     async function start(e) {
+      debugger;
         setSocketUrl(`wss://api.assemblyai.com/v2/realtime/ws?sample_rate=16000&token=${process.env.REACT_APP_ASSEMBLY_AI_TEMP}`);
         setShouldConnect(true);
     }
@@ -89,7 +90,6 @@ const WebRTCSTT = ({ onTextConverted }) => {
     }
 
     return (
-
         <div>
           <button id="start" onClick={start}>Start</button>
           <button id="stop" onClick={pause}>Stop</button>

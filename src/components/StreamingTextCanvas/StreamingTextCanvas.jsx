@@ -1,12 +1,17 @@
 import React from 'react';
 import { useState, useEffect } from "react";
 
-const StreamingText = ({text}) => {
+const StreamingTextCanvas = ({text, accumulate=false}) => {
 
     const [streamingText, setStreamingText] = useState('waiting..')
     useEffect(() => {
          if (text!==''){
-            setStreamingText(text)
+            if (accumulate) {
+                setStreamingText( (text) => streamingText+text);
+            }
+            else {
+            setStreamingText(text);
+          }
         }
     }, [text]);
     
@@ -17,4 +22,4 @@ const StreamingText = ({text}) => {
         );  
 
 };
-export default StreamingText;
+export default StreamingTextCanvas;
