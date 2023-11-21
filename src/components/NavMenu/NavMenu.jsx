@@ -17,7 +17,7 @@ import './NavMenu.css'
 
 import { NavLink } from 'react-router-dom'
 
-const pages = ['Home', 'Menus', 'Avatars','Settings'];
+const pages = ['Home', 'TextChat', 'Menus', 'Avatars','Settings'];
 const settings = ['Profile', 'Account', 'Dashboard', 'Logout'];
 
 function ResponsiveAppBar({ logoName ='Y A K W I T H . A I'}) {

@@ -1,24 +1,26 @@
-import React from 'react';
-import { useState, useEffect } from "react";
+import { useEffect, useRef } from "react"
+import TextField from '@mui/material/TextField';
+import InputAdornment from '@mui/material/InputAdornment';
+import KeyboardVoiceIcon from '@mui/icons-material/KeyboardVoice';
+import SmartToyIcon from '@mui/icons-material/SmartToy';
 
-const StreamingTextCanvas = ({text, accumulate=false}) => {
 
-    const [streamingText, setStreamingText] = useState('waiting..')
-    useEffect(() => {
-         if (text!==''){
-            if (accumulate) {
-                setStreamingText( (text) => streamingText+text);
-            }
-            else {
-            setStreamingText(text);
-          }
-        }
-    }, [text]);
+
+const StreamingTextCanvas = ({text, height, label}) => {
     
     return (
-        <div>
-            <p>{streamingText}</p>
-        </div>
+            <div style={{width: '80%'}}>
+                <TextField
+                multiline
+                fullWidth
+                label={label}
+                    value = {text}
+                    rows={height}
+                InputProps={{
+                    startAdornment: <InputAdornment position="start">{ label==='you' ? <KeyboardVoiceIcon />: <SmartToyIcon/> }</InputAdornment>,
+                  }}
+                />
+            </div>
         );  
 
 };

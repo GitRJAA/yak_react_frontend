@@ -14,9 +14,7 @@ import { useEffect, useState } from 'react'
 
 
 const LLMInterface = ({ session_id, prompt, onChunkAvailable, onDone }) => {
-    
-    const [responseAccumulator, setResponseAccumulator] = useState('')
-
+   
     const sendPrompt = async ( processed_prompt ) => {
         let response = await fetch(`${process.env.REACT_APP_LLM_ENDPOINT}/chat_with_agent`,{
             method: "POST",
@@ -32,7 +30,7 @@ const LLMInterface = ({ session_id, prompt, onChunkAvailable, onDone }) => {
             ),
         });
 
-        if (response.ok || !response.body ) {
+        if (!response.ok || !response.body ) {
             throw response.statusText;
         }
         return response;
@@ -46,27 +44,37 @@ const LLMInterface = ({ session_id, prompt, onChunkAvailable, onDone }) => {
                 while (looping) {
                     const { value, done } = await streamReader.read();
                     if (done){
+                        const finalChunk = decoder.decode(value) + '\n';
+                        onChunkAvailable(finalChunk)
                         break;
                     }                
-                const returnChunk = decoder.decoder(value,{stream: true});
-                onChunkAvailable(returnChunk)
-                setResponseAccumulator((responseAccumulator)=>responseAccumulator+returnChunk);
-            }
+                    const returnChunk = decoder.decode(value,{stream: true});
+                    onChunkAvailable(returnChunk)
+                    console.log(returnChunk)
+                }
         } catch (err) {
             console.log(err)
         }
         finally {
             onDone();
-            setResponseAccumulator('')
         }
     }
 
     useEffect(() => {
-        sendPrompt()
-        .then( stream => {
-            const streamReader = stream.body.getReader();
-            consumeStream(streamReader);
-        })
+        if (typeof prompt !== 'undefined' && prompt!==''){
+            const getResponse = async (prompt) => {
+                try {
+                    
+                    const stream = await sendPrompt(prompt);
+                    const streamReader = stream.body.getReader();
+                    await consumeStream(streamReader);
+                } 
+                catch (e) {
+                    console.log(e);
+                }
+            }
+            getResponse(prompt);
+        }
     }, [prompt]);
 }
 

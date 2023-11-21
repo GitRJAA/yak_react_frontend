@@ -1,16 +1,22 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext, useRef } from 'react';
 import useWebSocket from 'react-use-websocket';
 import RecordRTC, { StereoAudioRecorder } from "recordrtc";
+import { AppContext } from "../../api/services/AppContext";
 
-const WebRTCSTT = ({ onTextConverted: onSpeechConverted }) => {
+import Button from '@mui/material/Button';
+import Box from '@mui/material/Box';
+
+const WebRTCSTT = ({ onSpeechConverted }) => {
 
     let texts = {};
     let recorder = null;
+    //const recorder = useRef(null)
 
     const [socketUrl, setSocketUrl] = useState('');
     const [shouldConnect, setShouldConnect] = useState(false);
+    const [startIsDisabled, setStartIsDisabled ] = useState(false);
 
-    const [transcription, setTranscription] = useState(''); //for the returned text
+    const { tempSttToken } = useContext(AppContext);
 
     // Open the websocket and connect to socketUrl. Parameters are specific to Assembly Ai and may need to be changed to accomodate other providers.
     const { sendJsonMessage, lastMessage} = useWebSocket(socketUrl,
@@ -40,7 +46,7 @@ const WebRTCSTT = ({ onTextConverted: onSpeechConverted }) => {
                   reader.readAsDataURL(blob);
                 },
               })
-              recorder.startRecording();
+              recorder.current.startRecording();
             })
         },
     }, shouldConnect);
@@ -67,34 +73,39 @@ const WebRTCSTT = ({ onTextConverted: onSpeechConverted }) => {
               let lastMessageJSON = JSON.parse(lastMessage.data)
               console.log(lastMessageJSON.text)
               if (lastMessageJSON.message_type==='FinalTranscript'){
-                console.log(lastMessageJSON)
                 let text = processTranscript(lastMessageJSON)
-                setTranscription(text); //display it in the UI
                 onSpeechConverted(text); //fire callback to send text to parent state.
               }
           }
       }, [lastMessage]);
 
     async function start(e) {
-      debugger;
-        setSocketUrl(`wss://api.assemblyai.com/v2/realtime/ws?sample_rate=16000&token=${process.env.REACT_APP_ASSEMBLY_AI_TEMP}`);
+        setSocketUrl(`wss://api.assemblyai.com/v2/realtime/ws?sample_rate=16000&token=${tempSttToken}`);
         setShouldConnect(true);
+        setStartIsDisabled(true);
     }
     async function pause(e) {
-        if (recorder)
+      debugger;
+        if (recorder) {
+          console.log('Requested to pause recording voice.')
           recorder.pauseRecording()
+        }
       }
     async function resume(e) {
-      if (recorder)
+      if (recorder.current){
+        console.log('resuming recording voice.')
         recorder.resumeRecording();
+      }
     }
 
     return (
+      <Box sx={{'& button':{m:1}}}>
         <div>
-          <button id="start" onClick={start}>Start</button>
-          <button id="stop" onClick={pause}>Stop</button>
-          <button id="resume" onClick={resume}>Resume</button>
+          <Button variant="contained" disabled={startIsDisabled}  id="start" onClick={start}>Start</Button>
+          <Button variant="contained" id="stop" onClick={pause}>Stop</Button>
+          <Button variant="contained" id="resume" onClick={resume}>Resume</Button>
         </div>
+      </Box>
       );
     }
 

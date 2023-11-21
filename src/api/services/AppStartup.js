@@ -3,7 +3,9 @@
 import AgentConfig from '../../data/Agent/DefaultConfig.json'
 import createAgent from './Agent'
 
-const createAgentSession = async (config) => {
+const fetch = require('sync-fetch')
+
+const createAgentSession = (config) => {
     // Call api to create an agent based on the passed in config.
     //  Args: 
     //   config: json, see '../data/Agent/DefaultConfig.json'
@@ -12,9 +14,8 @@ const createAgentSession = async (config) => {
     let session_id = null;
     let session_error = null;
     try {
-       const session_data = await createAgent(config) //returns json {'session_id': str}
-        console.log(session_data)    
-        session_id = session_data['session_id']
+       const session_data = createAgent(config) //returns json {'session_id': str}
+       session_id = session_data.session_id;
     }
     catch(e){
         session_error = e;
@@ -23,12 +24,12 @@ const createAgentSession = async (config) => {
     return {session_id, session_error};
 }
 
-const getTempSttToken = async (service_name, client_authoriztion_token) => {
-    let temp_stt_token = null;
+const getTempSttToken =  (service_name, client_authoriztion_token) => {
+    let temp_token = null;
     let token_error = null;
 
     try {
-        const tokenResponse = await fetch(`${process.env.REACT_APP_LLM_ENDPOINT}/get_temp_token`, {
+        const tokenResponse = fetch(`${process.env.REACT_APP_LLM_ENDPOINT}/get_temp_token`, {
         method: 'POST',
         header: {'Content-Type': 'application/json'},
         body: JSON.stringify(
@@ -38,31 +39,31 @@ const getTempSttToken = async (service_name, client_authoriztion_token) => {
                 }
             )
         })
-        const response_json = await tokenResponse.json();
-        temp_stt_token = response_json['temp_token'];       
+        const response = tokenResponse.json();
+        temp_token = response.temp_token;
     } catch (e) {
         console.log(e);
         token_error = e;
     }
-
-    return {temp_token: temp_stt_token, token_err: token_error};
+    return {temp_token, token_error};
 }
 
-export const appStartUp = async (sessionID) => {
-    if (sessionID===''){
+export const appStartUp =  (sessionID) => {
     // 1. Create an agent
-    debugger;
-    const {session_id, session_error} = await createAgentSession(AgentConfig);
+    const session_response =  createAgentSession(AgentConfig);
+    const { session_id, session_error } = session_response;
+    if (session_error !== null){
+        throw session_response.session_error;
+    }
+    //console.log('session_id',session_id)
 
     // 2. Get STT temporary token
-    const { temp_stt_token, token_error } = await getTempSttToken('assemblyai_temp_token','inpracticethiswillbesomecryptostuff')
-
-    // 3. Get TTS temporary token
-    if (session_error === null && token_error === null){
-            return {session_id, temp_stt_token}
-        } 
-    } else {
-        console.log('App was reloaded but session_id and service tokens not changed');
-        return;
+    const temp_token_response =  getTempSttToken('assemblyai_temp_token','inpracticethiswillbesomecryptostuff')
+    const { temp_token, token_error } = temp_token_response;
+    if (token_error!== null) {
+        throw token_error;
     }
+    //console.log('temp_stt_token', temp_token)
+
+    return {session_id, temp_token}
 }
