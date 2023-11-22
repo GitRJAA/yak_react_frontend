@@ -1,32 +1,34 @@
 import { useState, useEffect, useContext, useRef } from 'react';
-import useWebSocket from 'react-use-websocket';
+import useWebSocket, {ReadyState} from 'react-use-websocket';
 import RecordRTC, { StereoAudioRecorder } from "recordrtc";
 import { AppContext } from "../../api/services/AppContext";
 
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
 
-const WebRTCSTT = ({ onSpeechConverted }) => {
+const WebRTCSTT = ({ onSpeechConverted, onRecorderStatusChange }) => {
 
     let texts = {};
-    let recorder = null;
-    //const recorder = useRef(null)
+    //let recorder = null;
+    const recorder = useRef(null)
 
     const [socketUrl, setSocketUrl] = useState('');
     const [shouldConnect, setShouldConnect] = useState(false);
     const [startIsDisabled, setStartIsDisabled ] = useState(false);
+    const [stopIsDisabled, setStopIsDisabled] = useState(true);
+    const [resumeIsDisabled, setResumeIsDisabled] = useState(true);
 
     const { tempSttToken } = useContext(AppContext);
 
     // Open the websocket and connect to socketUrl. Parameters are specific to Assembly Ai and may need to be changed to accomodate other providers.
-    const { sendJsonMessage, lastMessage} = useWebSocket(socketUrl,
+    const { sendJsonMessage, lastMessage, readyState} = useWebSocket(socketUrl,
         {
             onOpen: () => {
                 console.log('AssemplyAI websocket opened');
                 navigator.mediaDevices
                 .getUserMedia({ audio: true })
                 .then((stream) => {
-                  recorder = new RecordRTC(stream, {
+                  recorder.current = new RecordRTC(stream, {
                   type: "audio",
                   mimeType: "audio/webm;codecs=pcm", // endpoint requires 16bit PCM audio
                   recorderType: StereoAudioRecorder,
@@ -50,6 +52,14 @@ const WebRTCSTT = ({ onSpeechConverted }) => {
             })
         },
     }, shouldConnect);
+
+    const connectionStatus = {
+      [ReadyState.CONNECTING]: 'Connecting',
+      [ReadyState.OPEN]: 'Open',
+      [ReadyState.CLOSING]: 'Closing',
+      [ReadyState.CLOSED]: 'Closed',
+      [ReadyState.UNINSTANTIATED]: 'Uninstantiated',
+    }[readyState];
 
     const processTranscript = (msgJSON) => {
         let msg = "";
@@ -83,18 +93,26 @@ const WebRTCSTT = ({ onSpeechConverted }) => {
         setSocketUrl(`wss://api.assemblyai.com/v2/realtime/ws?sample_rate=16000&token=${tempSttToken}`);
         setShouldConnect(true);
         setStartIsDisabled(true);
+        setStopIsDisabled(false);
+        setResumeIsDisabled(true)
+        onRecorderStatusChange('recording')
     }
     async function pause(e) {
-      debugger;
-        if (recorder) {
+        if (recorder.current) {
           console.log('Requested to pause recording voice.')
-          recorder.pauseRecording()
+          recorder.current.pauseRecording()
+          setStopIsDisabled(true);
+          setResumeIsDisabled(false);
+          onRecorderStatusChange('paused')
         }
       }
     async function resume(e) {
       if (recorder.current){
         console.log('resuming recording voice.')
-        recorder.resumeRecording();
+        recorder.current.resumeRecording();
+        setResumeIsDisabled(true);
+        setStopIsDisabled(false);
+        onRecorderStatusChange('recording')
       }
     }
 
@@ -102,8 +120,9 @@ const WebRTCSTT = ({ onSpeechConverted }) => {
       <Box sx={{'& button':{m:1}}}>
         <div>
           <Button variant="contained" disabled={startIsDisabled}  id="start" onClick={start}>Start</Button>
-          <Button variant="contained" id="stop" onClick={pause}>Stop</Button>
-          <Button variant="contained" id="resume" onClick={resume}>Resume</Button>
+          <Button variant="contained" disabled={stopIsDisabled} id="stop" onClick={pause}>Stop</Button>
+          <Button variant="contained" disabled={resumeIsDisabled} id="resume" onClick={resume}>Resume</Button>
+          <p>connection: {connectionStatus}</p>
         </div>
       </Box>
       );
