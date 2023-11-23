@@ -12,11 +12,15 @@ class ApiUserMessage(BaseModel):
 
 import { useEffect, useState } from 'react'
 
+const convoModeEndpointMapping = {
+    "chat":"chat_with_agent",
+    "talk":"talk_with_agent"
+}
 
-const LLMInterface = ({ session_id, prompt, onChunkAvailable, onDone }) => {
+const LLMInterface = ({ session_id, prompt, mode, onChunkAvailable, onDone }) => {
    
     const sendPrompt = async ( processed_prompt ) => {
-        let response = await fetch(`${process.env.REACT_APP_LLM_ENDPOINT}/chat_with_agent`,{
+        let response = await fetch(`${process.env.REACT_APP_LLM_ENDPOINT}/${convoModeEndpointMapping[mode]}`,{
             method: "POST",
             headers: { 
                 "Content-Type": "application/json",

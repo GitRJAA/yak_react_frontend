@@ -106,6 +106,7 @@ const WebRTCSTT = ({ onSpeechConverted, onRecorderStatusChange }) => {
           onRecorderStatusChange('paused')
         }
       }
+      
     async function resume(e) {
       if (recorder.current){
         console.log('resuming recording voice.')

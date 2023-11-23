@@ -5,11 +5,12 @@ import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
 
-export default function ModeSelect() {
+export default function ModeSelect({onModeChange}) {
   const [mode, setMode] = React.useState('');
 
   const handleChange = (event) => {
     setMode(event.target.value);
+    onModeChange(mode)
   };
 
   return (
@@ -23,9 +24,9 @@ export default function ModeSelect() {
           label="Mode"
           onChange={handleChange}
         >
-          <MenuItem value={10}>Voice Chat</MenuItem>
-          <MenuItem value={20}>Messaging</MenuItem>
-          <MenuItem value={30}>Cast</MenuItem>
+          <MenuItem value="talk">Voice Chat</MenuItem>
+          <MenuItem value="chat">Messaging</MenuItem>
+          <MenuItem value="cast">Cast</MenuItem>
         </Select>
       </FormControl>
     </Box>
