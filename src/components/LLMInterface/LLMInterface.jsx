@@ -10,7 +10,7 @@ class ApiUserMessage(BaseModel):
     user_id: Optional[str]
 */
 
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 
 const convoModeEndpointMapping = {
     "chat":"chat_with_agent",
@@ -68,7 +68,6 @@ const LLMInterface = ({ session_id, prompt, mode, onChunkAvailable, onDone }) =>
         if (typeof prompt !== 'undefined' && prompt!==''){
             const getResponse = async (prompt) => {
                 try {
-                    
                     const stream = await sendPrompt(prompt);
                     const streamReader = stream.body.getReader();
                     await consumeStream(streamReader);

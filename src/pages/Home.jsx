@@ -2,7 +2,7 @@ import YakAvatar from "../components/YakAvatar/YakAvatar";
 import ModeSelect from "../components/ModeSelect/ModeSelect"
 import WebRTCSTT from "../components/WebRTCSTT/WebRTCSTT"
 import StreamingTextCanvas from "../components/StreamingTextCanvas/StreamingTextCanvas";
-import LLMInterface from "../components/LLMInterface/LLMInterface";
+import LLMTalkInterface from "../components/LLMTalkInterface/LLMTalkInterface";
 
 import { useState, useContext } from "react";
 import { AppContext } from "../api/services/AppContext";
@@ -48,7 +48,9 @@ const Home = () => {
         <p>Session ID: {sessionID}</p>
         <WebRTCSTT onSpeechConverted={handleConvertedSpeech} onRecorderStatusChange={handleRecorderStatusChange} token = {tempSttToken}/>
         <StreamingTextCanvas text={convertedSpeechText} height="2" label="you"/>
-        <LLMInterface session_id = {sessionID} prompt={convertedSpeechText} mode={convoMode} onChunkAvailable={handleChunkAvailable}  onDone={handleStreamDone} />
+        {/*<LLMInterface session_id = {sessionID} prompt={convertedSpeechText} mode={convoMode} onChunkAvailable={handleChunkAvailable}  onDone={handleStreamDone} />*/}
+
+        <LLMTalkInterface session_id={sessionID} prompt={convertedSpeechText} onDone={handleStreamDone} />
         <div className="avatar-panel" >
             <YakAvatar icon={avatarIcon} />
         </div>
