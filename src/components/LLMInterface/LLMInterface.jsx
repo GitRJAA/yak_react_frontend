@@ -20,7 +20,7 @@ const convoModeEndpointMapping = {
 const LLMInterface = ({ session_id, prompt, mode, onChunkAvailable, onDone }) => {
    
     const sendPrompt = async ( processed_prompt ) => {
-        let response = await fetch(`${process.env.REACT_APP_LLM_ENDPOINT}/${convoModeEndpointMapping[mode]}`,{
+        let response = await fetch(`${process.env.REACT_APP_LLM_ENDPOINT}/chat_with_agent`,{
             method: "POST",
             headers: { 
                 "Content-Type": "application/json",

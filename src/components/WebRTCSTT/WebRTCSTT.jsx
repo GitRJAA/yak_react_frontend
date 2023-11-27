@@ -24,33 +24,43 @@ const WebRTCSTT = ({ onSpeechConverted, onRecorderStatusChange }) => {
     const { sendJsonMessage, lastMessage, readyState} = useWebSocket(socketUrl,
         {
             onOpen: () => {
-                console.log('AssemplyAI websocket opened');
-                navigator.mediaDevices
-                .getUserMedia({ audio: true })
-                .then((stream) => {
-                  recorder.current = new RecordRTC(stream, {
-                  type: "audio",
-                  mimeType: "audio/webm;codecs=pcm", // endpoint requires 16bit PCM audio
-                  recorderType: StereoAudioRecorder,
-                  timeSlice: 500, // set 250 ms intervals of data that sends to AAI
-                  desiredSampRate: 16000,
-                  numberOfAudioChannels: 1, // realtime requires only one channel
-                  bufferSize: 16384,
-                  audioBitsPerSecond: 128000,
-                  ondataavailable: (blob) => {
-                    const reader = new FileReader();
-                    reader.onload = () => {
-                      const base64data = reader.result;
-                    sendJsonMessage({
-                       audio_data: base64data.split("base64,")[1],
-                    });
-                  };
-                  reader.readAsDataURL(blob);
-                },
+                  console.log('AssemplyAI websocket opened');
+                  navigator.mediaDevices
+                  .getUserMedia({ audio: true })
+                  .then((stream) => {
+                    recorder.current = new RecordRTC(stream, {
+                    type: "audio",
+                    mimeType: "audio/webm;codecs=pcm", // endpoint requires 16bit PCM audio
+                    recorderType: StereoAudioRecorder,
+                    timeSlice: 250, // set 250 ms intervals of data that sends to AAI
+                    desiredSampRate: 16000,
+                    numberOfAudioChannels: 1, // realtime requires only one channel
+                    bufferSize: 16384,
+                    audioBitsPerSecond: 128000,
+                    ondataavailable: (blob) => {
+                      const reader = new FileReader();
+                      reader.onload = () => {
+                        const base64data = reader.result;
+                      sendJsonMessage({
+                        audio_data: base64data.split("base64,")[1],
+                      });
+                    };
+                    reader.readAsDataURL(blob);
+                  },
+                })
+                recorder.current.startRecording();
               })
-              recorder.current.startRecording();
-            })
-        },
+            },
+
+            onClose: (e) => {
+              console.log(`WS closed for reason: ${e.reason}`);
+            },
+            shouldReconnect: (closeEvent) => {
+              return true;
+            },
+            reconnectAttempts: 5,
+            reconnectInterval: 3000,
+
     }, shouldConnect);
 
     const connectionStatus = {
