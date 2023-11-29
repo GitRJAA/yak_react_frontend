@@ -22,6 +22,18 @@ function App() {
       // To avoid reinitializing a session, sessionID is checked 
       console.log('Initializing App.')
       console.log('Begin: create agent, get session_id, get stt temp token.')
+
+      /* fetch(`${process.env.REACT_APP_LLM_ENDPOINT}/test_connection`,{
+        method: 'GET',
+        header: {'Content-Type': 'application/json'}
+      })
+      .then(response => {
+        console.log('test connection ok',response);
+      })
+      .catch( (error) => {
+        console.error('test connection err',error);
+      } ) */
+
       const response = appStartUp(sessionID);
       if (response!==null){
         const {session_id, temp_token } = response;
@@ -30,7 +42,8 @@ function App() {
       } else {
         console.log('Warning: session can only be initialized once');
       }
-    }, []);
+    }
+    , []);
 
     useEffect(()=>{
       console.log('sessionid',{sessionID});

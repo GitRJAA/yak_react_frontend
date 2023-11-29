@@ -10,7 +10,7 @@ class ApiUserMessage(BaseModel):
     user_id: Optional[str]
 */
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useRef } from 'react'
 
 const LLMTalkInterface = ({ session_id, prompt, onDone }) => {
 
@@ -53,7 +53,7 @@ const LLMTalkInterface = ({ session_id, prompt, onDone }) => {
             source.buffer = buffer;
             source.connect(audioContext.current.destination);
 
-            // Add source to queue
+            // Add source to queue so its played in the correct sequence.
             sourceQueue.current.push(source);
 
             if (!isStreamPlaying.current) { 
@@ -72,6 +72,7 @@ const LLMTalkInterface = ({ session_id, prompt, onDone }) => {
               isStreamPlaying.current = true;
           } else {
               isStreamPlaying.current = false;
+              onDone(); 
           }
       };
  
@@ -87,20 +88,22 @@ const LLMTalkInterface = ({ session_id, prompt, onDone }) => {
                 let response = null;
 
                 if (!isStreamPlaying.current){
-                  response = await sendPrompt(prompt, ActionEndPoint.CONVERSATION);
+                  response = await sendPrompt(prompt, ActionEndPoint.CONVERSATION); //Streams audio back 1 sentance at a time.
                 } else {
-                  //Allow yak to be interrupted when its speaking.
+                  //Allow yak to be interrupted while its speaking.
                   isStreamPlaying.current = false;
-                  response = await sendPrompt('Sorry, can you say that again.', ActionEndPoint.SAY);
                   sourceToPlay.current.stop();
+                  response = await sendPrompt('Sorry, can you say that again.', ActionEndPoint.SAY);
                   sourceQueue.current = [];
                 }
 
                 const reader = response.body.getReader();  //response.body exposes a ReadableStream
 
                 while (true) {
-                    const { value, done } = await reader.read();
-                    if (done) break;
+                    const { value, done } = await reader.read(); // Reads one sentance of audio.
+                    if (done) {
+                        break;
+                    }
                     //queue and play the chunk.
                     processAudioChunk(value);
                 }

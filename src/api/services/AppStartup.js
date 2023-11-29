@@ -50,6 +50,7 @@ const getTempSttToken =  (service_name, client_authoriztion_token) => {
 
 export const appStartUp =  (sessionID) => {
     // 1. Create an agent
+    console.log(AgentConfig)
     const session_response =  createAgentSession(AgentConfig);
     const { session_id, session_error } = session_response;
     if (session_error !== null){

@@ -6,7 +6,7 @@ import { AppContext } from "../../api/services/AppContext";
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
 
-const WebRTCSTT = ({ onSpeechConverted, onRecorderStatusChange }) => {
+const WebRTCSTT = ({ onSpeechConverted, onConversionDone, onRecorderStatusChange }) => {
 
     let texts = {};
     //let recorder = null;
@@ -68,7 +68,7 @@ const WebRTCSTT = ({ onSpeechConverted, onRecorderStatusChange }) => {
       [ReadyState.OPEN]: 'Open',
       [ReadyState.CLOSING]: 'Closing',
       [ReadyState.CLOSED]: 'Closed',
-      [ReadyState.UNINSTANTIATED]: 'Uninstantiated',
+      [ReadyState.UNINSTANTIATED]: 'Not connected. Press Start to begin.',
     }[readyState];
 
     const processTranscript = (msgJSON) => {
@@ -88,13 +88,13 @@ const WebRTCSTT = ({ onSpeechConverted, onRecorderStatusChange }) => {
       };
 
     useEffect(() => {
-        //if (lastMessage !== null && lastMessage.message_type === 'FinalTranscript'){
           if (lastMessage!==null){
               let lastMessageJSON = JSON.parse(lastMessage.data)
               console.log(lastMessageJSON.text)
+              onSpeechConverted(lastMessageJSON.text)
               if (lastMessageJSON.message_type==='FinalTranscript'){
                 let text = processTranscript(lastMessageJSON)
-                onSpeechConverted(text); //fire callback to send text to parent state.
+                onConversionDone(text); //fire callback to send final text to parent state.
               }
           }
       }, [lastMessage]);
