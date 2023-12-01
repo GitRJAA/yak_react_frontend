@@ -16,6 +16,20 @@ function App() {
 
   const [tempSttToken, setTempSttToken] =  useState('');
   const [sessionID, setSessionID] = useState('');
+  const [businessUID, setBusinessUID] = useState('');  //Will eventually need to be set by the authorization provider.
+
+  const test_connection = () => {
+    fetch(`${process.env.REACT_APP_LLM_ENDPOINT}/test_connection`,{
+      method: 'GET',
+      header: {'Content-Type': 'application/json'}
+    })
+    .then(response => {
+      console.log('test connection ok',response);
+    })
+    .catch( (error) => {
+      console.error('test connection err',error);
+    } )
+  }
 
   useEffect(()=>{ 
       // Create the agent when the app first starts up. Returns a session_id that is used to track the agent on the server side.
@@ -23,27 +37,23 @@ function App() {
       console.log('Initializing App.')
       console.log('Begin: create agent, get session_id, get stt temp token.')
 
-      /* fetch(`${process.env.REACT_APP_LLM_ENDPOINT}/test_connection`,{
-        method: 'GET',
-        header: {'Content-Type': 'application/json'}
-      })
-      .then(response => {
-        console.log('test connection ok',response);
-      })
-      .catch( (error) => {
-        console.error('test connection err',error);
-      } ) */
-
+    if (process.env.REACT_APP_MODE !== 'dev'){
       const response = appStartUp(sessionID);
       if (response!==null){
-        const {session_id, temp_token } = response;
+        const {session_id, temp_token, business_uid } = response;
         setSessionID(session_id);
         setTempSttToken(temp_token);
+        setBusinessUID(business_uid);
       } else {
         console.log('Warning: session can only be initialized once');
       }
+    } else {
+      setSessionID('dummy')
+      setTempSttToken('dummy')
+      setBusinessUID('dummy_business_uid')
     }
-    , []);
+  }
+  , []);
 
     useEffect(()=>{
       console.log('sessionid',{sessionID});
@@ -51,7 +61,7 @@ function App() {
     },[sessionID, tempSttToken]);
 
   return (
-      <AppContext.Provider value = { {sessionID, tempSttToken}} >
+      <AppContext.Provider value = { {sessionID, tempSttToken, businessUID}} >
       <BrowserRouter>
         <header>
           <NavMenu logoName='Twist Cafe'/>

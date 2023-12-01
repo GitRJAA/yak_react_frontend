@@ -56,7 +56,6 @@ export const appStartUp =  (sessionID) => {
     if (session_error !== null){
         throw session_response.session_error;
     }
-    //console.log('session_id',session_id)
 
     // 2. Get STT temporary token
     const temp_token_response =  getTempSttToken('assemblyai_temp_token','inpracticethiswillbesomecryptostuff')
@@ -64,7 +63,8 @@ export const appStartUp =  (sessionID) => {
     if (token_error!== null) {
         throw token_error;
     }
-    //console.log('temp_stt_token', temp_token)
 
-    return {session_id, temp_token}
+    const business_uid = "NOT_IMPLEMENTED_YET";
+
+    return {session_id, temp_token, business_uid}
 }

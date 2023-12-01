@@ -4,8 +4,6 @@ import InputAdornment from '@mui/material/InputAdornment';
 import KeyboardVoiceIcon from '@mui/icons-material/KeyboardVoice';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 
-
-
 const StreamingTextCanvas = ({text, height, label}) => {
     
     return (
