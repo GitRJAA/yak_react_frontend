@@ -3,6 +3,7 @@ import React, {useContext} from 'react';
 import MenuGallery from '../components/MenuComponents/MenuGallery';
 import AddImageOptions from '../components/MenuComponents/AddImageOptions';
 import { AppContext } from "../api/services/AppContext";
+import CameraCapture from '../components/MenuComponents/CameraCapture';
 
 import Smiley from "../assets/smiles.png";
 import Twist from'../assets/twist_logo.png';
@@ -27,7 +28,8 @@ export default function Menus() {
     return (
         <div className='menu'>
             <AddImageOptions businessUid={businessUID} />
-            <MenuGallery menu_sources={menus} businessUid={businessUID}/>
+            <CameraCapture />
+            {/*<MenuGallery menu_sources={menus} businessUid={businessUID}/>*/}
         </div>
       );
     }
