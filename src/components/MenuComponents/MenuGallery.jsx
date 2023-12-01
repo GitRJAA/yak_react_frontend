@@ -86,10 +86,23 @@ export default function MenuGallery({menu_sources, businessUid }) {
                   />
                 </Box>
                 <Box position="absolute" top={3} right={3}>
-                  <IconButton aria-label="edit" style = {{ backgroundColor: '#FFFFFF' }}>
+                  <IconButton aria-label="edit" sx = {{ 
+                          backgroundColor: '#FFFFFF', 
+                          '&:hover':{
+                            backgroundColor: 'lightgray'
+                          }
+                        }}
+                      >
                     <EditIcon />
                   </IconButton>
-                  <IconButton aria-label="delete" style = {{ backgroundColor: '#FFFFFF' }}>
+                  <IconButton aria-label="delete" sx = {{ 
+                          backgroundColor: '#FFFFFF', 
+                          '&:hover':{
+                            backgroundColor: 'lightgray'
+                          }
+                        }}
+                      >
+                        
                     <DeleteIcon />
                   </IconButton>
                 </Box>
