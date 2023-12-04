@@ -1,17 +1,21 @@
-import React, {useContext} from 'react';
+import React, {useContext, useState} from 'react';
 
 import MenuGallery from '../components/MenuComponents/MenuGallery';
 import AddImageOptions from '../components/MenuComponents/AddImageOptions';
 import { AppContext } from "../api/services/AppContext";
 import CameraCapture from '../components/MenuComponents/CameraCapture';
 
+
 import Smiley from "../assets/smiles.png";
 import Twist from'../assets/twist_logo.png';
 
 export default function Menus() {
 
-    const businessUID = useContext(AppContext)
+    const subMenuOptions = ['gallery', 'camera','file','editor']
 
+    const [subMenu, setSubMenu] = useState('gallery')
+
+  //Dependancy injection data
     const menus = [
         {
           name: 'Breakfast Menu',
@@ -25,11 +29,22 @@ export default function Menus() {
           }
       ];
 
+      const menu_none = null;
+    
+    const handleMenuChange = (option) => {
+      if (subMenuOptions.includes(option)){
+        setSubMenu(option)
+      } else {
+        console.log(`Attempt to navigate to invalid submenu of Menus tab: ${option}`)
+      }
+    }
+
     return (
         <div className='menu'>
-            <AddImageOptions businessUid={businessUID} />
-            <CameraCapture />
-            {/*<MenuGallery menu_sources={menus} businessUid={businessUID}/>*/}
+            <AddImageOptions onSubMenuChange={handleMenuChange} />
+            { subMenu === 'camera' && <CameraCapture />}
+            { subMenu === "gallery" && <MenuGallery menu_sources={menu_none} />}
+
         </div>
       );
     }

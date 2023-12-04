@@ -1,59 +1,88 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { Box, Card, CardContent, IconButton, Typography, Grid, CircularProgress } from '@mui/material';
+import Tooltip from '@mui/material/Tooltip';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import AppContext from '../../api/services/AppContext';
 
-export default function MenuGallery({menu_sources, businessUid }) {
+import './MenuGallery.css'
+
+export default function MenuGallery({menu_sources}) {
     const [menus, setMenus] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+
+    const {businessUID} = useContext(AppContext)
 
     
   // Assume a common aspect ratio for all images, for example, 4:3
   const aspectRatio = (3 / 4) * 100; // This is for a 4:3 aspect ratio
 
+  const showAllMenus = async () => {
+    // Get all menus
+    setLoading(true);
+    try {
+      const response = await fetch(`${process.env.REACT_APP_LLM_ENDPOINT}/menus/get_all/${businessUID}`);
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status}`);
+      }
+      const menusData = await response.json();
+
+      // base64 encoded image data can be directly rendered in browser without converting to blob.
+      const menusWithBlobUrls = menusData.map(menu => {
+        return {
+          'menu_id': menu.menu_id,
+          'name': menu.name,
+          'raw_image_data':`data:image/png;base64,${menu.raw_image_data}`};
+      });
+
+      setMenus(menusWithBlobUrls);
+
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const delete_menu = async(menu_id) => {
+    // TODO confirmation popup
+    try {
+      debugger;
+      const response = await fetch(`${process.env.REACT_APP_LLM_ENDPOINT}/menus/delete_one/${businessUID}/${menu_id}`);
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status}`);
+      }
+      const ret = await response.json();
+      if (ret.status === "success"){
+        console.log(`OK: Deleted menu_id ${menu_id}`);
+        showAllMenus();
+      }
+      else {
+        console.log(`Failed: Failed to delete menu_id ${menu_id}, err: ${ret.message}`);
+      }
+    }
+    catch (err) {
+      setError(err.message);
+    }
+  }
 
   useEffect(() => {
-
     if (menu_sources){
-      setMenus(menu_sources)
+      // If menu data directly passed in then use it. 
+      setMenus(menu_sources);
     } else {
-        const fetchData = async () => {
-          setLoading(true);
-          try {
-            const response = await fetch(`/get_menus?business_uid=${businessUid}`);
-            if (!response.ok) {
-              throw new Error(`Error: ${response.status}`);
-            }
-            const menusData = await response.json();
-
-            // Assuming menusData is an array of objects with a property 'image' containing the image binary data
-            const menusWithBlobUrls = menusData.map(menu => {
-              const blob = new Blob([menu.image], { type: 'image/jpeg' }); // Adjust the MIME type as needed
-              const imageUrl = URL.createObjectURL(blob);
-              return { ...menu, imageUrl };
-            });
-
-            setMenus(menusWithBlobUrls);
-
-          } catch (err) {
-            setError(err.message);
-          } finally {
-            setLoading(false);
-          }
-        };
-
-        fetchData();
+      // else get the list of Menu objects from the backend. 
+      showAllMenus();
     }
+  }, []);
 
-    // Cleanup Blob URLs on component unmount
-    return () => {
-      menus.forEach(menu => URL.revokeObjectURL(menu.imageUrl));
-    };
 
-  }, [businessUid]);
-
-  if (loading) return <CircularProgress />;
+  if (loading) return (
+            <div className = "centerContainer">
+              <CircularProgress />
+            </div>
+  )
   if (error) return <p>Error: {error}</p>;
 
   const gridJustifyContent = menus.length < 3 ? 'center' : 'flex-start';
@@ -73,7 +102,7 @@ export default function MenuGallery({menu_sources, businessUid }) {
                   }}
                 >
                   <img
-                    src={menu.imageUrl}
+                    src={menu.raw_image_data}
                     alt={menu.name}
                     style={{
                       position: 'absolute',
@@ -95,16 +124,18 @@ export default function MenuGallery({menu_sources, businessUid }) {
                       >
                     <EditIcon />
                   </IconButton>
-                  <IconButton aria-label="delete" sx = {{ 
-                          backgroundColor: '#FFFFFF', 
-                          '&:hover':{
-                            backgroundColor: 'lightgray'
-                          }
-                        }}
+                  <Tooltip title={menu.menu_id}>
+                      <IconButton aria-label="delete" sx = {{ 
+                              backgroundColor: '#FFFFFF', 
+                              '&:hover':{
+                                backgroundColor: 'lightgray'
+                              }
+                            }}
+                            onClick={() => delete_menu(menu.menu_id)}
                       >
-                        
-                    <DeleteIcon />
+                      <DeleteIcon />
                   </IconButton>
+                  </Tooltip>
                 </Box>
               </Box>
               <CardContent>

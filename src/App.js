@@ -41,6 +41,7 @@ function App() {
       const response = appStartUp(sessionID);
       if (response!==null){
         const {session_id, temp_token, business_uid } = response;
+        console.log('triplet or startup ids',response);
         setSessionID(session_id);
         setTempSttToken(temp_token);
         setBusinessUID(business_uid);
@@ -58,7 +59,8 @@ function App() {
     useEffect(()=>{
       console.log('sessionid',{sessionID});
       console.log('temp_token',{tempSttToken});
-    },[sessionID, tempSttToken]);
+      console.log('businessUID',{businessUID});
+    },[sessionID, tempSttToken, businessUID]);
 
   return (
       <AppContext.Provider value = { {sessionID, tempSttToken, businessUID}} >

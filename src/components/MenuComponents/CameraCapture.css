@@ -19,6 +19,7 @@
 .controls {
     position: absolute;
     bottom: 10px;
+    justify-content: center;
     background-color: "#FFFFFF";
 }
 
@@ -26,6 +27,7 @@
 .photo-actions {
     position: absolute;
     bottom: 10px;
+    justify-content: center;
     display: flex;
     gap: 20px;
 }

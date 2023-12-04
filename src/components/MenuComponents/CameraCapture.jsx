@@ -1,8 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react';
 import IconButton from '@mui/material/IconButton';
 import PhotoCamera from '@mui/icons-material/PhotoCamera';
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
+import AppContext from '../../api/services/AppContext';
+
+import { convertDataURLToBlob } from '../../api/services/Utilities';
 
 import './CameraCapture.css'
 
@@ -13,6 +16,8 @@ const CameraCapture = () => {
     const videoRef = useRef(null);
     const photoRef = useRef(null);
 
+    const {businessUID} = useContext(AppContext);
+  
     const initializeCamera = async () => {
         try {
             const currentStream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -27,7 +32,6 @@ const CameraCapture = () => {
 
     useEffect(() => {
        initializeCamera();
-
         // Clean up
         return () => {
             if (stream) {
@@ -35,6 +39,7 @@ const CameraCapture = () => {
             }
         };
     }, []);
+
 
     const takePhoto = () => {
         const video = videoRef.current;
@@ -58,9 +63,32 @@ const CameraCapture = () => {
         setPhotoTaken(true);
     };
 
-    const handleKeepPhoto = () => {
+    const uploadImage = async () => {
+        const dataURL = photoSrc //.current.src;
+        const blob = convertDataURLToBlob(dataURL);
+        const file = new File([blob], 'upload.png', { type: 'image/png' });
+      
+        const formData = new FormData();
+        formData.append('business_uid', businessUID);
+        formData.append('file', file);
+      
+        fetch(`${process.env.REACT_APP_LLM_ENDPOINT}/menus/upload/`, {
+          method: 'POST',
+          body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+          console.log(data);
+        })
+        .catch(error => {
+          console.error('Error uploading image:', error);
+        });
+      };
+    
+      const handleKeepPhoto = async() => {
         console.log('Photo kept:', photoSrc);
         // Here you can handle the logic to use the photo as needed
+        uploadImage();
     };
 
     const handleRejectPhoto = () => {
@@ -72,7 +100,7 @@ const CameraCapture = () => {
     return (
         <div className="camera-container">
         {!photoTaken ? (
-            <>
+            <div className='video-frame'>
                 <video ref={videoRef} autoPlay playsInline className="video-stream"></video>
                 <div className="controls">
                     <IconButton color="primary" aria-label="take photo" component="span" onClick={takePhoto}  sx = {{ 
@@ -84,7 +112,7 @@ const CameraCapture = () => {
                         <PhotoCamera fontSize="large" />
                     </IconButton>
                 </div>
-            </>
+            </div>
         ) : (
             // Render the taken photo and action buttons
             <>
