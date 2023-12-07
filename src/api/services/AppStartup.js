@@ -64,7 +64,7 @@ export const appStartUp =  (sessionID) => {
         throw token_error;
     }
 
-    const business_uid = "NOT_IMPLEMENTED_YET";
+    const business_uid = "dummy_business_uid";
 
     return {session_id, temp_token, business_uid}
 }

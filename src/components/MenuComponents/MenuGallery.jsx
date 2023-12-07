@@ -7,7 +7,7 @@ import AppContext from '../../api/services/AppContext';
 
 import './MenuGallery.css'
 
-export default function MenuGallery({menu_sources}) {
+export default function MenuGallery({menu_sources, onSelect }) {
     const [menus, setMenus] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -22,22 +22,21 @@ export default function MenuGallery({menu_sources}) {
     // Get all menus
     setLoading(true);
     try {
-      const response = await fetch(`${process.env.REACT_APP_LLM_ENDPOINT}/menus/get_all/${businessUID}`);
+      const response = await fetch(`${process.env.REACT_APP_LLM_ENDPOINT}/menus/get_all/${businessUID}`); //Returns {"menus": List[Menus]
       if (!response.ok) {
         throw new Error(`Error: ${response.status}`);
       }
       const menusData = await response.json();
-
-      // base64 encoded image data can be directly rendered in browser without converting to blob.
-      const menusWithBlobUrls = menusData.map(menu => {
-        return {
-          'menu_id': menu.menu_id,
-          'name': menu.name,
-          'raw_image_data':`data:image/png;base64,${menu.raw_image_data}`};
-      });
-
-      setMenus(menusWithBlobUrls);
-
+      if (menusData && menusData.menus.length !== 0){
+        // base64 encoded image data can be directly rendered in browser without converting to blob.
+        const menusWithBlobUrls = menusData.menus.map(menu => {
+          return {
+            'menu_id': menu.menu_id,
+            'name': menu.name,
+            'raw_image_data':`data:image/png;base64,${menu.raw_image_data}`};
+        });
+        setMenus(menusWithBlobUrls);
+      }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -48,8 +47,8 @@ export default function MenuGallery({menu_sources}) {
   const delete_menu = async(menu_id) => {
     // TODO confirmation popup
     try {
-      debugger;
       const response = await fetch(`${process.env.REACT_APP_LLM_ENDPOINT}/menus/delete_one/${businessUID}/${menu_id}`);
+      console.log(response.ok)
       if (!response.ok) {
         throw new Error(`Error: ${response.status}`);
       }
@@ -79,11 +78,15 @@ export default function MenuGallery({menu_sources}) {
 
 
   if (loading) return (
-            <div className = "centerContainer">
-              <CircularProgress />
-            </div>
+      <div className = "centerContainer">
+        <CircularProgress />
+      </div>
   )
-  if (error) return <p>Error: {error}</p>;
+  if (error) return (
+    <div className = "centerContainer Error">
+       <p>😳 Oops! {error}</p>
+      </div>
+  );
 
   const gridJustifyContent = menus.length < 3 ? 'center' : 'flex-start';
 
@@ -121,6 +124,7 @@ export default function MenuGallery({menu_sources}) {
                             backgroundColor: 'lightgray'
                           }
                         }}
+                        onClick = {() => onSelect(menu.menu_id)}
                       >
                     <EditIcon />
                   </IconButton>

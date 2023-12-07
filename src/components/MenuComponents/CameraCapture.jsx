@@ -15,6 +15,7 @@ const CameraCapture = () => {
     const [photoSrc, setPhotoSrc] = useState('');
     const videoRef = useRef(null);
     const photoRef = useRef(null);
+    const menuID = useRef(null);
 
     const {businessUID} = useContext(AppContext);
   
@@ -42,6 +43,7 @@ const CameraCapture = () => {
 
 
     const takePhoto = () => {
+        // Capture the current image frame
         const video = videoRef.current;
         const photo = photoRef.current;
         const context = photo.getContext('2d');
@@ -56,7 +58,7 @@ const CameraCapture = () => {
             context.drawImage(video, 0, 0, width, height);
 
             // Get data URL of the photo
-            const photoDataURL = photo.toDataURL('image/png');
+            const photoDataURL = photo.toDataURL('image/png');  //Inline data base64??
             setPhotoSrc(photoDataURL);
             setPhotoTaken(true);
         }
@@ -64,32 +66,64 @@ const CameraCapture = () => {
     };
 
     const uploadImage = async () => {
-        const dataURL = photoSrc //.current.src;
-        const blob = convertDataURLToBlob(dataURL);
+        const dataURL = photoSrc //
+        const blob = convertDataURLToBlob(dataURL);  // Data must be passed as blob to fastAPI.
         const file = new File([blob], 'upload.png', { type: 'image/png' });
       
         const formData = new FormData();
         formData.append('business_uid', businessUID);
         formData.append('file', file);
       
-        fetch(`${process.env.REACT_APP_LLM_ENDPOINT}/menus/upload/`, {
-          method: 'POST',
-          body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-          console.log(data);
-        })
-        .catch(error => {
-          console.error('Error uploading image:', error);
-        });
-      };
+        try {
+            const response = await fetch(`${process.env.REACT_APP_LLM_ENDPOINT}/menus/upload/`, {
+                method: 'POST',
+                body: formData
+            });
     
-      const handleKeepPhoto = async() => {
-        console.log('Photo kept:', photoSrc);
-        // Here you can handle the logic to use the photo as needed
-        uploadImage();
+            const data = await response.json();
+            console.log(data);
+    
+            if (data.menu_id) {
+                menuID.current = data.menu_id;
+                return true;  // Return true if the operation is successful
+            } else {
+                return false; // Return false if the operation is unsuccessful
+            }
+        } catch (error) {
+            console.error('Error uploading image:', error);
+            return false;  // Return false in case of error
+        }
     };
+    
+    const handleKeepPhoto = async() => {
+        console.log('Photo kept');
+        //Send image to database server. Sets menuID if successful.
+        uploadImage()
+        .then ( data =>{
+            debugger;
+             if (data && menuID.current){
+                doOCR(businessUID, menuID.current);
+            }
+        })
+    }
+
+    const doOCR = async () => {
+        // Perform OCR on image.
+        debugger;
+        try {
+            const response = await fetch (`${process.env.REACT_APP_LLM_ENDPOINT}/menus/ocr/${businessUID}/${menuID.current}`);
+            const { status, message } = await response.json();
+            if (status === "success"){
+                console.log('Successfully extract text for image:', menuID.current);
+            }
+            else {
+                console.error('Error performing OCR for image:',menuID.current, message);
+            }
+        }
+        catch(error) {
+            console.error('Error performing OCR for image:',menuID.current, error);
+        }
+    }
 
     const handleRejectPhoto = () => {
         setPhotoTaken(false);

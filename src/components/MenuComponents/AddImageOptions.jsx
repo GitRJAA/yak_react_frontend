@@ -56,9 +56,6 @@ export default function AddImageOptions({onSubMenuChange}) {
                 <IconButton aria-label="attach" size="large" style={{ fontSize: '3rem' }} onClick={()=>onSubMenuChange('file')}>
                     <AttachFileIcon fontSize="inherit" />
                 </IconButton>
-                <IconButton aria-label="document" size="large" style={{ fontSize: '3rem' }} onClick={()=>onSubMenuChange('editor')}>
-                    <DescriptionIcon fontSize="inherit" />
-                </IconButton>
                 </Box>
             </FormGroup>
             </FormControl>

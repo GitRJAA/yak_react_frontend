@@ -1,19 +1,21 @@
-import React, {useContext, useState} from 'react';
+import React, { useState, useRef } from 'react';
 
 import MenuGallery from '../components/MenuComponents/MenuGallery';
 import AddImageOptions from '../components/MenuComponents/AddImageOptions';
-import { AppContext } from "../api/services/AppContext";
 import CameraCapture from '../components/MenuComponents/CameraCapture';
-
+import TextEditor from '../components/MenuComponents/TextEditor';
+import ModalPopup from '../components/ModalPopup/ModalPopup';
 
 import Smiley from "../assets/smiles.png";
 import Twist from'../assets/twist_logo.png';
 
 export default function Menus() {
 
-    const subMenuOptions = ['gallery', 'camera','file','editor']
+    const subMenuOptions = ['gallery', 'camera','file','menu_metadata_editor']
 
     const [subMenu, setSubMenu] = useState('gallery')
+    const menuID = useRef(null)
+    const [modalMessage, setModalMessage] = useState('')
 
   //Dependancy injection data
     const menus = [
@@ -29,8 +31,13 @@ export default function Menus() {
           }
       ];
 
-      const menu_none = null;
+    const menu_none = null;
     
+    const handleImageSelected = (menu_id) => {
+      menuID.current = menu_id;
+      setSubMenu('menu_metadata_editor');
+    }
+
     const handleMenuChange = (option) => {
       if (subMenuOptions.includes(option)){
         setSubMenu(option)
@@ -39,12 +46,21 @@ export default function Menus() {
       }
     }
 
+    const handleOpenModal = (message) => {
+      setModalMessage(message);
+    }
+    const handleClose = (action) => {
+      setModalMessage('');
+      setSubMenu("gallery");
+    }
+
     return (
         <div className='menu'>
             <AddImageOptions onSubMenuChange={handleMenuChange} />
+            <ModalPopup message={modalMessage} onClose={handleClose} />
             { subMenu === 'camera' && <CameraCapture />}
-            { subMenu === "gallery" && <MenuGallery menu_sources={menu_none} />}
-
+            { subMenu === "gallery" && <MenuGallery menu_sources={menu_none} onSelect={handleImageSelected} />}
+            { subMenu === "menu_metadata_editor" && <TextEditor menu_id={menuID.current} showModal={handleOpenModal} />}
         </div>
       );
     }
