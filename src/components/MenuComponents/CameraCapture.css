@@ -11,7 +11,7 @@
     border-color: "black";
 }
 
-.video-stream {
+.video-stream, .captured-image  {
     max-width: 100%;
     height: auto;
 }
@@ -21,6 +21,7 @@
     bottom: 10px;
     justify-content: center;
     background-color: "#FFFFFF";
+    display: flex;
 }
 
 /* Add styles for the photo action buttons */

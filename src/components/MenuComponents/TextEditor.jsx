@@ -7,7 +7,7 @@ import {AdapterDateFns}  from '@mui/x-date-pickers/AdapterDateFns';
 
 import './TextEditor.css'; // Import the CSS file
 
-const TextEditor = ({menu_id, showModal }) => {
+const TextEditor = ({menu_id, popUpHandlers }) => {
   const { businessUID } = useContext(AppContext);
 
   //menuData is an object containing the mandatory fields in the yakwithai.voice_chat.datat_models.Menu dataclass.
@@ -21,6 +21,12 @@ const TextEditor = ({menu_id, showModal }) => {
   });
 
   const [loading, setLoading] = useState(false)
+
+  const msg_updating = {'action':'open','msg':'Updating menu details', 'type':'wait'}
+  const msg_close = {'action':'close','msg':'', 'type':''}
+  const msg_ai_text_correction = {'action':'open','msg':'Working some AI magic', 'type':'wait'}
+  const msg_success = {'action':'open', 'msg':'Done', 'type':'ok'}
+
 
   const fetchMenuData = async () => {
     setLoading(true);
@@ -46,7 +52,8 @@ const TextEditor = ({menu_id, showModal }) => {
 
   const updateMenu = async() => {
     // Send form data back to database
-    setLoading(true);
+    //setLoading(true);
+    popUpHandlers[0](msg_updating);
 
     try{
         const response = await fetch(
@@ -62,8 +69,8 @@ const TextEditor = ({menu_id, showModal }) => {
     } catch (e) {
         console.log(`Fetch error updating menu ${menuData.menu_id}: error ${e}`);
     }
-    setLoading(false);
-    showModal('Success');
+    popUpHandlers[0](msg_success);
+    popUpHandlers[1]("gallery")
   }
 
   if (loading) return (

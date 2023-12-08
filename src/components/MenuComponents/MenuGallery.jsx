@@ -33,7 +33,7 @@ export default function MenuGallery({menu_sources, onSelect }) {
           return {
             'menu_id': menu.menu_id,
             'name': menu.name,
-            'raw_image_data':`data:image/png;base64,${menu.raw_image_data}`};
+            'image_data':`data:image/png;base64,${menu.thumbnail_image_data}`};
         });
         setMenus(menusWithBlobUrls);
       }
@@ -105,7 +105,7 @@ export default function MenuGallery({menu_sources, onSelect }) {
                   }}
                 >
                   <img
-                    src={menu.raw_image_data}
+                    src={menu.image_data}
                     alt={menu.name}
                     style={{
                       position: 'absolute',
@@ -145,9 +145,6 @@ export default function MenuGallery({menu_sources, onSelect }) {
               <CardContent>
                 <Typography gutterBottom variant="h5" component="div">
                   {menu.name}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Available: {menu.timeRange}
                 </Typography>
               </CardContent>
             </Card>
