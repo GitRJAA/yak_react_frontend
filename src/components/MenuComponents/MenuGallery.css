@@ -4,3 +4,9 @@
     align-items: center;
     height: 100vh;
 }
+
+.imageEditButtons {
+    display: flex;
+    flex-direction: column;
+
+}

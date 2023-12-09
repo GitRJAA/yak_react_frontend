@@ -18,15 +18,21 @@ const CameraCapture = ({popUpHandlers}) => {
     const photoRef = useRef(null);
     const menuID = useRef(null);
     const cameraIDList = useRef(null); // A list of available camera devices.
-    const cameraIndex = useRef(0); //Index of the currently selected option in cameraIDList
+    const cameraSelection = useRef('environment'); //Index of the currently selected option in cameraIDList
 
     const {businessUID} = useContext(AppContext);
   
+    const ENVIRONMENT_FACING = 'environment';
+    const USER_FACING = 'user';
+
     const setCameraList = async () => {
         // Populate camera list state with attached camera devices (e.g front an back)
         try {
           const devices =  await navigator.mediaDevices.enumerateDevices();
           cameraIDList.current = devices.filter(device => device.kind === 'videoinput');
+          if (cameraIDList.length === 0){
+            throw new Error ('No camera devices found.')
+          }
          } catch (error) {
           console.error('Error accessing media devices:', error);
         }
@@ -36,9 +42,9 @@ const CameraCapture = ({popUpHandlers}) => {
 
         const constraints = {
             video: {
-              deviceId: { exact: cameraIDList.current[cameraIndex.current].deviceId},
               width: { ideal: process.env.REACT_APP_MAX_CAMERA_PIXEL_WIDTH },
-              height: { ideal: process.env.REACT_APP_MAX_CAMERA_PIXEL_WIDTH } 
+              height: { ideal: process.env.REACT_APP_MAX_CAMERA_PIXEL_WIDTH },
+              facingMode: "environment"
             }
           };
 
@@ -133,8 +139,8 @@ const CameraCapture = ({popUpHandlers}) => {
                 throw new Error('Error processing upload:');
             }
             popUpHandlers[0]({'action':'open','msg':'Done','type':'ok'});
-            //popupHandlers[1]("gallery");
-            handleRejectPhoto();  // Re-initialize and let the user add another image.
+            popUpHandlers[1]("menu_metadata_editor", menuID.current);
+            //handleRejectPhoto();  // Re-initialize and let the user add another image.
         }
         catch (err) {
             popUpHandlers[0]({'action':'open','msg':`${err}`,'type':'error'});
@@ -149,9 +155,12 @@ const CameraCapture = ({popUpHandlers}) => {
     };
 
     const handleCameraSwitch = async() => {
-        var nextIndex = cameraIndex.current + 1;
-        nextIndex = nextIndex % cameraIDList.current.length;
-        cameraIndex.current = nextIndex;
+        // Switch cameras if more than one is available.
+        if (cameraSelection.current === ENVIRONMENT_FACING){
+            cameraSelection.current = USER_FACING;
+        } else {
+            cameraSelection.current = ENVIRONMENT_FACING;
+        }
         initializeCamera();
     }
 
@@ -176,8 +185,6 @@ const CameraCapture = ({popUpHandlers}) => {
         return ok;
     }
 
-
-
     return (
         <div className="camera-container">
         {!photoTaken ? (
@@ -190,7 +197,7 @@ const CameraCapture = ({popUpHandlers}) => {
                                 backgroundColor: 'lightgray'
                             }
                             }}>
-                            <PhotoCamera fontSize="large" />
+                            <PhotoCamera fontSize="large" style={{ fontSize: '3rem'}}/>
                         </IconButton>
                         <IconButton color="light-gray" aria-label="switch camera" component="span" onClick={handleCameraSwitch} sx = {{ 
                             backgroundColor: '#FFFFFF', 

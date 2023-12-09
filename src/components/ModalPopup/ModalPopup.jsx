@@ -25,7 +25,7 @@ const style = {
     },
     maxWidth: '500px', // max width of the modal
     bgcolor: 'background.paper',
-    border: '2px solid #000',
+    border: '1px solid light-gray',
     boxShadow: 24,
     p: 4,
     outline: 'none',
@@ -44,14 +44,16 @@ const ModalPopup = ({context, handleClose }) => {
                     { type==='wait' && <CircularProgress />  }
                     { type==='alert' && <CloseIcon className="largeRedCross" /> }
                     { type==='ok' && <CheckCircleIcon className='successIcon' /> }
-                </div>               
-                <Button 
-                    variant="contained" 
-                    color="primary" 
-                    onClick={handleClose}
-                    sx={{ mt: 2 }}
-                >Close
-                </Button>
+                </div> 
+                { type!=='wait' &&              
+                    <Button 
+                        variant="contained" 
+                        color="primary" 
+                        onClick={handleClose}
+                        sx={{ mt: 2 }}
+                    >Close
+                    </Button>
+                }
             </Box>
         </Modal>
     );

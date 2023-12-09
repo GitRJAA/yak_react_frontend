@@ -117,17 +117,20 @@ export default function MenuGallery({menu_sources, onSelect }) {
                     }}
                   />
                 </Box>
-                <Box position="absolute" top={3} right={3}>
-                  <IconButton aria-label="edit" sx = {{ 
-                          backgroundColor: '#FFFFFF', 
-                          '&:hover':{
-                            backgroundColor: 'lightgray'
-                          }
-                        }}
-                        onClick = {() => onSelect(menu.menu_id)}
-                      >
-                    <EditIcon />
-                  </IconButton>
+                <Box position="absolute" top={3} right={5} className='imageEditButtons'>
+                <Tooltip title='edit menu data'>
+                    <IconButton aria-label="edit" sx = {{ 
+                            backgroundColor: '#FFFFFF', 
+                            '&:hover':{
+                              backgroundColor: 'lightgray', 
+                            },
+                            marginBottom: 5
+                          }}
+                          onClick = {() => onSelect(menu.menu_id)}
+                        >
+                      <EditIcon />
+                    </IconButton>
+                  </Tooltip>
                   <Tooltip title={menu.menu_id}>
                       <IconButton aria-label="delete" sx = {{ 
                               backgroundColor: '#FFFFFF', 

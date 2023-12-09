@@ -63,9 +63,12 @@ export default function Menus() {
       }
     }
 
-    const handleFinalize = (newPage) => {
+    const handleFinalize = (newPage, menu_id = null) => {
       setModalContext(modalClose);
       if (newPage !=='') {
+        if (menu_id){
+          menuID.current = menu_id;
+        }
         setSubMenu(newPage);
       }
     }
