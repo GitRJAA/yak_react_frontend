@@ -11,24 +11,60 @@
     border-color: "black";
 }
 
+.video-container {
+    /* Make the parent container of the video relatively positioned */
+    position: relative;
+    /*width: [DesiredWidth];  Set your desired width */
+    max-width: 100%; /* Optional, for responsiveness */
+    margin: auto; /* Centering the container if needed */
+}
+
 .video-stream, .captured-image  {
-    max-width: 100%;
+    width: 100%;
     height: auto;
+    object-fit: cover;
 }
 
 .controls {
+    /* Position the controls over the video */
     position: absolute;
-    bottom: 10px;
-    justify-content: center;
-    background-color: "#FFFFFF";
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     display: flex;
+    justify-content: center;
+    align-items: flex-end; /* Align items to the bottom */
 }
+
+.controls > .MuiButtonBase-root {
+    /* General styles for buttons */
+    position: absolute;
+}
+
+/* Specific styles for each button */
+.controls > .MuiButtonBase-root:first-child {
+    /* Position the first button at the middle bottom */
+    bottom: 20px; /* Adjust as needed */
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.controls > .MuiButtonBase-root:nth-child(2) {
+    /* Position the second button at bottom-right */
+    bottom: 20px; /* Adjust as needed */
+    right: 1%; /* Adjust as needed */
+}
+
 
 /* Add styles for the photo action buttons */
 .photo-actions {
+    /* Center the .photo-actions div within the .video-container */
     position: absolute;
-    bottom: 10px;
-    justify-content: center;
+    left: 50%;
+    bottom: 40px;
+    transform: translate(-50%, 50%);
     display: flex;
-    gap: 20px;
+    justify-content: center;
+    align-items: center;
 }

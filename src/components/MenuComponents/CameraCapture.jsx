@@ -181,29 +181,35 @@ const CameraCapture = ({popUpHandlers}) => {
     return (
         <div className="camera-container">
         {!photoTaken ? (
-            <div className='video-frame'>
-                <video ref={videoRef} autoPlay playsInline className="video-stream"></video>
-                <div className="controls">
-                    <IconButton color="primary" aria-label="take photo" component="span" onClick={takePhoto}  sx = {{ 
-                          backgroundColor: '#FFFFFF', 
-                          '&:hover':{
-                            backgroundColor: 'lightgray'
-                          }
-                        }}>
-                        <PhotoCamera fontSize="large" />
-                    </IconButton>
-                    <IconButton onClick={handleCameraSwitch}>
-                        <FlipCameraIosIcon fontSize='large' />
-                    </IconButton>
+                <div className='video-container'>
+                    <video ref={videoRef} autoPlay playsInline className="video-stream"></video>
+                    <div className="controls">
+                        <IconButton color="primary" aria-label="take photo" component="span" onClick={takePhoto}  sx = {{ 
+                            backgroundColor: '#FFFFFF', 
+                            '&:hover':{
+                                backgroundColor: 'lightgray'
+                            }
+                            }}>
+                            <PhotoCamera fontSize="large" />
+                        </IconButton>
+                        <IconButton color="light-gray" aria-label="switch camera" component="span" onClick={handleCameraSwitch} sx = {{ 
+                            backgroundColor: '#FFFFFF', 
+                            '&:hover':{
+                                backgroundColor: 'lightgray'
+                            }
+                            }}>
+                            <FlipCameraIosIcon fontSize='large' />
+                        </IconButton>
+                    </div>
                 </div>
-            </div>
         ) : (
             // Render the taken photo and action buttons
-            <>
+            <div className='video-container'>
                 <img src={photoSrc} alt="Captured" className="captured-image" />
                 <div className="photo-actions">
                     <IconButton color="primary" aria-label="keep photo" component="span" onClick={handleKeepPhoto}  sx = {{ 
                           backgroundColor: '#FFFFFF', 
+                          m: 5,
                           '&:hover':{
                             backgroundColor: 'lightgray'
                           }
@@ -219,7 +225,7 @@ const CameraCapture = ({popUpHandlers}) => {
                         <CloseIcon fontSize="large" />
                     </IconButton>
                 </div>
-            </>
+            </div>
         )}
         <canvas ref={photoRef} style={{ display: 'none' }}></canvas>
         <div className = 'cameraFlip' >

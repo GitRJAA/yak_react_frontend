@@ -1,5 +1,6 @@
 import React from 'react';
 import Box from '@mui/material/Box';
+import { Typography } from '@mui/material';
 import IconButton from '@mui/material/IconButton';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
@@ -19,48 +20,54 @@ export default function AddImageOptions({onSubMenuChange}) {
             justifyContent="center" 
             width="100vw" // Full viewport width
         >
-            <Box 
-            border={1} 
-            borderColor="grey.500" 
-            borderRadius={2} 
-            p={1} // Add some padding inside the border
-            margin={5}
-            display="inline-block" // Make the box shrink to fit its content
-        >
-            <FormControl component="fieldset" variant="outlined" sx={{ p: 1, borderColor: 'grey.500' }}>
-                <FormLabel component="legend" sx={{ mb: 1 }}>Menu Gallery</FormLabel>
-                <FormGroup>
-                    <Box display="flex" flexDirection="row" alignItems="center" justifyContent="center">
-                        <IconButton aria-label="menu-images" size="large" style={{ fontSize: '3rem'}} onClick={()=>onSubMenuChange('gallery')}>
-                            <CollectionsIcon fontSize="inheret" />
-                        </IconButton>
+
+                    <Box position="relative" border={1} borderColor="grey.400" borderRadius={2} p={1} m={2}>
+                            <Typography
+                                variant="caption"
+                                style={{
+                                    position: 'absolute',
+                                    top: -10,
+                                    left: 20,
+                                    backgroundColor: 'white',
+                                    padding: '0 4px'
+                                }}
+                            >
+                                gallery
+                            </Typography>
+                        <Box display="flex" flexDirection="row" alignItems="center" justifyContent="center">
+                            <IconButton aria-label="menu-images" size="large" style={{ fontSize: '3rem'}} onClick={()=>onSubMenuChange('gallery')}>
+                                <CollectionsIcon fontSize="inheret" />
+                            </IconButton>
+                        </Box>
                     </Box>
-                </FormGroup>
-            </FormControl>
-        </Box>
-        <Box 
-            border={1} 
-            borderColor="grey.500" 
-            borderRadius={2} 
-            p={1} // Add some padding inside the border
-            margin={5}
-            display="inline-block" // Make the box shrink to fit its content
-        >
-            <FormControl component="fieldset" variant="outlined" sx={{ p: 1, borderColor: 'grey.500' }}>
-            <FormLabel component="legend" sx={{ mb: 1 }}>Add Menu</FormLabel>
-            <FormGroup>
-                <Box display="flex" flexDirection="row" alignItems="center" justifyContent="center">
-                <IconButton aria-label="camera" size="large" style={{ fontSize: '3rem'}} onClick={()=>onSubMenuChange('camera')}>
-                    <CameraAltIcon fontSize="inherit" />
-                </IconButton>
-                <IconButton aria-label="attach" size="large" style={{ fontSize: '3rem' }} onClick={()=>onSubMenuChange('file')}>
-                    <AttachFileIcon fontSize="inherit" />
-                </IconButton>
+ 
+
+                    <Box position="relative" border={1} borderColor="grey.400" borderRadius={2} p={1} m={2}>
+                        <Typography
+                            variant="caption"
+                            style={{
+                                position: 'absolute',
+                                top: -10,
+                                left: 20,
+                                backgroundColor: 'white',
+                                padding: '0 4px'
+                            }}
+                        >
+                        add menus
+                        </Typography>
+
+
+                        <Box display="flex" flexDirection="row" alignItems="center" justifyContent="center">
+                            <IconButton aria-label="camera" size="large" style={{ fontSize: '3rem'}} onClick={()=>onSubMenuChange('camera')}>
+                                <CameraAltIcon fontSize="inherit" />
+                            </IconButton>
+                            <IconButton aria-label="attach" size="large" style={{ fontSize: '3rem' }} onClick={()=>onSubMenuChange('file')}>
+                                <AttachFileIcon fontSize="inherit" />
+                            </IconButton>
+                        </Box>
+                    </Box>
                 </Box>
-            </FormGroup>
-            </FormControl>
-            </Box>
-            </Box>
+
         </div>
       );
     }
