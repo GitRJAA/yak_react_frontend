@@ -13,7 +13,6 @@ export default function MenuGallery({menu_sources, onSelect }) {
     const [error, setError] = useState(null);
 
     const {businessUID} = useContext(AppContext)
-
     
   // Assume a common aspect ratio for all images, for example, 4:3
   const aspectRatio = (3 / 4) * 100; // This is for a 4:3 aspect ratio

@@ -28,3 +28,22 @@
 .button-container {
     margin-top: 20px;
 }
+
+.text-editor-ai-prompt {
+    width: 75%;
+    max-width: 900px;
+    display: flex;
+    flex-direction: row;
+}
+
+.prompt-combo {
+    width: 90%;
+    margin-bottom: 20px;
+    margin-top: 0px;
+    margin-right: 20px;
+}
+
+.apply-button {
+    margin-bottom: 20px
+}
+

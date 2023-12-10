@@ -21,8 +21,6 @@ const Home = () => {
 
     const [avatarIcon, setAvatarIcon] = useState(process.env.REACT_APP_NOT_LISTENING_ICON);
 
-    const [convoMode, setConvoMode ] = useState('talk')
-
     const handleConvertedSpeech = async (text)  => {
         /* Show text as its converted, before its finalized. Assembly AI sends all text, not incremental text. */
         if (text!==''){
@@ -57,13 +55,8 @@ const Home = () => {
         }
     }
 
-    const handleConvoModeChange = (mode) => {
-        setConvoMode(mode)
-    }
-
     return (
     <div className="home allpages">
-        <p>Session ID: {sessionID}</p>
         <WebRTCSTT onSpeechConverted={handleConvertedSpeech} onConversionDone={handleConversionDone} onRecorderStatusChange={handleRecorderStatusChange} token = {tempSttToken}/>
         <StreamingTextCanvas text={streamingConvertedText} height="2" label="you"/>
         {/* <LLMInterface session_id = {sessionID} prompt={convertedSpeechText} mode={convoMode} onChunkAvailable={handleChunkAvailable}  onDone={handleStreamDone} /> */}
@@ -73,9 +66,6 @@ const Home = () => {
             <YakAvatar icon={avatarIcon} />
         </div>
         <StreamingTextCanvas text = {responseText} height="10" label="me"/>
-        <div className='home-mode-buttons'>
-            < ModeSelect onModeChange={handleConvoModeChange} />
-        </div>
     </div>
     )
 }
