@@ -17,27 +17,54 @@ import DialogTitle from '@mui/material/DialogTitle';
 
 import './CameraCapture.css'
 
+/*
+    The CameraCapture component deals with all aspects of menu ingestion via the devices camera.
+    i) Capturing images and selecting the camera device.
+    ii) Collating multiple images into a single image collection so that a multi-page menu can be 
+        added or a menu page can be added via overlapping images of that same page. Each image is 
+        saved to the database on the server as a Menu record and they are collated when the user 
+        selects 'no' in add more images. The Menu record with menu.collection.sequence_numer == 1 
+        is used as the primary menu for display and editing. 
+    iii) Sending the image to the OCR endpoint for text extraction
+
+    The component also consumes the customized modal popup component for activity messaging 
+    (instantiatd in the parent component). A dialog is used for user input.
+
+*/
+
 const CameraCapture = ({popUpHandlers}) => {
+    /* popUpHandlers: List[Callables] where 
+      -popupHandlers[0] deals with opening/closing, showing message. 
+      -popupHandlers[1] should be the cleanup operators after closing - this is optional
+    */    
     const {businessUID} = useContext(AppContext);
+    const menuID = useRef(null);  // Unique id for each image in a menu collection.
+
+    /* 
+        'grp_id' is used for grouping images into a single menu. Must use the string 'null'. 
+        Using '' will cause pydantic validation errors on api. This corresponds to the 
+        pydantic.dataclass MenuImageRecord defined in the api 
+    */
+    const grpID = useRef('null');  
+
+    const [dialogOpen, setDialogOpen] = useState(false); // State of 'Add more images' dialog
+   
+    /*
+         Camera functions 
+    */
 
     const [stream, setStream] = useState(null);
     const [photoTaken, setPhotoTaken] = useState(false);
     const [photoSrc, setPhotoSrc] = useState('');
     const videoRef = useRef(null);
     const photoRef = useRef(null);
-    const menuID = useRef(null);
-    const cameraIDList = useRef(null); // A list of available camera devices.
-    const cameraSelection = useRef('environment'); //Index of the currently selected option in cameraIDList
-
-    const [open, setOpen] = useState(false); // Add images dialog
-    const grp_id = useRef('null');  // For grouping images into a single menu. Must use the string 'null'. Using '' will cause pydantic validation errors on api.
  
+    // Camera selector
     const ENVIRONMENT_FACING = 'environment';
     const USER_FACING = 'user';
 
-    /*
-         Camera functions 
-    */
+    const cameraIDList = useRef(null); // A list of available camera devices.
+    const cameraSelection = useRef('environment'); //Index of the currently selected option in cameraIDList
 
     const setCameraList = async () => {
         // Populate camera list state with attached camera devices (e.g front an back)  - Deprecated
@@ -93,7 +120,6 @@ const CameraCapture = ({popUpHandlers}) => {
             setPhotoSrc(photoDataURL);
             setPhotoTaken(true);
         }
-      
     };
     
     const handleCameraSwitch = async() => {
@@ -131,13 +157,12 @@ const CameraCapture = ({popUpHandlers}) => {
         const formData = new FormData();
         formData.append('business_uid', businessUID);
         formData.append('file', file);
-        formData.append('grp_id',grp_id.current)
+        formData.append('grp_id',grpID.current)
 
-        if (grp_id.current === null || grp_id.current === ''){
+        if (grpID.current === null || grpID.current === ''){
             throw Error('grp_id can not be null or empty. This will cause pydantic validation errors on api. ')
         }
-        
-        debugger;
+
         try {
             const response = await fetch(`${process.env.REACT_APP_LLM_ENDPOINT}/menus/upload/`, {
                 method: 'POST',
@@ -153,7 +178,7 @@ const CameraCapture = ({popUpHandlers}) => {
     
             if (data && data.payload) {
                 menuID.current = data.payload.menu_id;
-                grp_id.current = data.payload.grp_id;
+                grpID.current = data.payload.grp_id;
                 return true; 
             } else {
                 console.error('Menu Upload failed');
@@ -167,7 +192,7 @@ const CameraCapture = ({popUpHandlers}) => {
     
     const handleKeepPhoto = async() => {
         console.log('Photo kept');
-        //UPload image to server and extract text. Sets menuID if successful.
+        //Upload image to server and extract text. Sets menuID if successful.
         popUpHandlers[0]({'action':'open','msg':'Uploading and Extracting Text','type':'wait'});
         
         try {
@@ -179,9 +204,8 @@ const CameraCapture = ({popUpHandlers}) => {
             if (!upload_ok || !ocr_ok){
                 throw new Error('Error during OCR on uploaded image.');
             }
-            //popUpHandlers[0]({'action':'open','msg':'Done','type':'ok'});
             popUpHandlers[0]({'action':'close','msg':'','type':''});
-            handleClickOpen(); 
+            handleOpenModal(); 
         }
         catch (err) {
             handleRejectPhoto(); 
@@ -221,49 +245,70 @@ const CameraCapture = ({popUpHandlers}) => {
         Dialog to add more photos
     */
     
-    const handleClickOpen = () => {
-        setOpen(true);
+    const handleOpenModal = () => {
+        setDialogOpen(true);
     };
     
-    const handleNoMore = () => {
-        setOpen(false);
-        popUpHandlers[1]("menu_metadata_editor", menuID.current);
+    const invokeImageCollation = async () => {
+        
+        var ok = false;
+        try {
+            const response = await fetch(`${process.env.REACT_APP_LLM_ENDPOINT}/menus/collate_images/${businessUID}/${grpID.current}`); // {success:bool, msg:str, count:int, primary_menu_id}
+            if (response.ok){
+                const data = await response.json();
+                if (data.status === "success"){
+                    menuID.current = data.payload.primary_menu_id
+                    console.info(`Collated text for ${grpID.current}`);
+                    ok = true;
+                }
+                else {
+                    console.error(`Failed while executing image collation: ${response.msg} `);
+                }
+            }
+        }
+        catch (err) {
+            console.error('A problem occured when invoking collate_images',err);
+        }
+        return ok;
+    }
+
+    const handleNoMore =  () => {
+        setDialogOpen(false);
+        const ok = invokeImageCollation(); // Side effect of setting menuID.current to menu_id of the menu with sequence_number == 0
+        if (ok) {
+            popUpHandlers[1]("menu_metadata_editor", menuID.current); //Redirect to the menu_meta_data editor (text editor)
+        } else {
+            popUpHandlers[0]({'action':'open','msg':'A problem occured while collating text from multiple images.','type':'error'});
+        }
     };
-    
-    // Handle the action when the user confirms
+
     const handleAddMore = () => {
-        // Add your logic here for the "Add more images?" action
-        // This is where you can trigger the appropriate action
-        // For now, we'll just close the dialog
-        setOpen(false);
+        //Add another image to the same image collection comprising the menu.
+        setDialogOpen(false);
         handleRejectPhoto();  // Re-initialize and let the user add another image.
 
     };
 
-
-    return (
-        
+    return (       
         <div className="camera-container">
-
-        <div>
-        <Dialog open={open} onClose={handleNoMore}>
-            <DialogTitle>Add More Images?</DialogTitle>
-            <DialogContent>
-            <DialogContentText>
-                Add another image to same menu?
-            </DialogContentText>
-            </DialogContent>
-            <DialogActions>
-            <Button onClick={handleNoMore} color="primary">
-                No
-            </Button>
-            <Button onClick={handleAddMore} color="primary">
-                Yes
-            </Button>
-            </DialogActions>
-        </Dialog>
-        </div>
-
+            <div>
+                <Dialog open={dialogOpen} onClose={handleNoMore}>
+                    <DialogTitle>Add more?</DialogTitle>
+                    <DialogContent>
+                    <DialogContentText>
+                        Add another image to same menu
+                    </DialogContentText>
+                    </DialogContent>
+                    <DialogActions>
+                    <Button onClick={handleNoMore} color="primary">
+                        No
+                    </Button>
+                    <Button onClick={handleAddMore} color="primary">
+                        Yes
+                    </Button>
+                    </DialogActions>
+                </Dialog>
+            </div>
 
         {!photoTaken ? (
                 <div className='video-container'>
