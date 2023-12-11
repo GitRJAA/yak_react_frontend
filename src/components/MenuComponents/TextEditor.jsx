@@ -28,10 +28,16 @@ const TextEditor = ({menu_id, popUpHandlers }) => {
   const [loading, setLoading] = useState(false)
 
   // Popup configurations for common tasks.
+  function templatePopup(template, ...values) {
+    return template.replace(/{(\d+)}/g, (match, index) => values[index]);
+  }
+
   const msg_updating = {'action':'open','msg':'Updating menu details', 'type':'wait'}
   const msg_close = {'action':'close','msg':'', 'type':''}
   const msg_ai_text_correction = {'action':'open','msg':'Working some AI magic', 'type':'wait'}
   const msg_success = {'action':'open', 'msg':'Done', 'type':'ok'}
+  const msg_error_ai_text_correction = {'action':'open','msg':'An error occured when doing AI-text correction.','type':'error'}
+  const msg_general_error  = "{'actoin':'open',msg:{0},'type':'error'}"
 
   const fetchMenuData = async () => {
     setLoading(true);
@@ -152,7 +158,8 @@ const TextEditor = ({menu_id, popUpHandlers }) => {
             });           
         const ret = await response.json(); //Typical response success: ?, message: ?
         if (ret.status !== 'success'){
-            console.log(`Problem ai-fixing text`, ret.msg);
+            console.log(`Failure furing ai-editing`, ret.msg);
+            popUpHandlers[0](templatePopup(msg_general_error,'Failure during ai-editing.'));
         } else {
           //apply the updated text to the menu
           menuData.menu_text = ret.msg;
@@ -160,6 +167,7 @@ const TextEditor = ({menu_id, popUpHandlers }) => {
 
     } catch (e) {
         console.log(`Fetch error ai-fixing text: error ${e}`);
+        popUpHandlers[0](msg_error_ai_text_correction);
     }
     popUpHandlers[0](msg_success);
   }

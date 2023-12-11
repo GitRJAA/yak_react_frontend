@@ -63,20 +63,23 @@ export default function Menus() {
       }
     }
 
-    const handleFinalize = (newPage, menu_id = null) => {
+    const handleFinalize = (newPage ='', menu_id = null) => {
       setModalContext(modalClose);
-      if (newPage !=='') {
-        if (menu_id){
-          menuID.current = menu_id;
+      // handleFinalize can be called directly via an event.
+      if (!(newPage && newPage.preventDefault && newPage.stopPropagation)){  
+        if (newPage !=='') {  // redirect
+          if (menu_id){
+            menuID.current = menu_id;
+          }
+          setSubMenu(newPage);
         }
-        setSubMenu(newPage);
       }
     }
 
     return (
         <div className='menu'>
             <AddImageOptions onSubMenuChange={handleMenuChange} />
-            <ModalPopup context={modalContext} onClose={handleFinalize} />
+            <ModalPopup context={modalContext} handleClose={handleFinalize} />
             { subMenu === 'camera' && <CameraCapture popUpHandlers={[handlePopup, handleFinalize]}/>}
             { subMenu === "gallery" && <MenuGallery menu_sources={menu_none} onSelect={handleImageSelected} />}
             { subMenu === "menu_metadata_editor" && <TextEditor menu_id={menuID.current} popUpHandlers={[handlePopup, handleFinalize]} />}

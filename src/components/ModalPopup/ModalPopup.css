@@ -16,13 +16,44 @@
 .message {
     padding-right: 1rem;
 }
+.popUpControls {
+    width: 100%;
+    text-align: right;
+}
+
+.icon_text_overlay_container {
+    position: relative;
+    display: inline-block;
+}
+.background_icon {
+    position: absolute;
+    top: 0;
+    left:-10px;
+    opacity: 10%
+}
 
 .largeRedCross {
-    font-size: 40px; /* or another size of your choice */
+    font-size: 100px; 
+    color: red;
+}
+
+.largProgress {
+    font-size: 100px; 
+    color: green;
+
+}
+
+.largeWarning {
+    font-size: 100px; 
+    color: yellow;
+}
+
+.largeError{
+    font-size: 100px; 
     color: red;
 }
 
 .successIcon {
-    font-size: 40px; /* or another size of your choice */
+    font-size: 100px; 
     color: rgb(18, 172, 18);
 }

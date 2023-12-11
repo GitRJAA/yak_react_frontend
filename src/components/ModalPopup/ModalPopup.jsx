@@ -3,6 +3,7 @@ import Modal from '@mui/material/Modal';
 import CircularProgress from '@mui/material/CircularProgress';
 import CloseIcon from '@mui/icons-material/Close';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import { WarningAmber, ErrorOutline } from '@mui/icons-material';
 import Button from '@mui/material/Button';
 
 
@@ -16,19 +17,21 @@ const style = {
     top: '50%',
     left: '50%',
     transform: 'translate(-50%, -50%)',
-    width: {
+    
+    maxWidth: {
       xs: '50%', // responsive width
-      sm: '40%',
-      md: '30%',
-      lg: '20%',
-      xl: '10%',
+      sm: '45%',
+      md: '40%',
+      lg: '30%',
+      xl: '20%',
     },
-    maxWidth: '500px', // max width of the modal
+    //maxWidth: '500px', // max width of the modal
     bgcolor: 'background.paper',
     border: '1px solid light-gray',
+    borderRadius: 2,
     boxShadow: 24,
     p: 4,
-    outline: 'none',
+    outline: 'none'
   };
 
 
@@ -39,20 +42,27 @@ const ModalPopup = ({context, handleClose }) => {
         <Modal open={(action === 'open')} onClose={handleClose}>
             <Box sx={style}>
                 {/*<div className='message'>{msg}</div> */}
-                <Typography variant="h6" style={{ marginTop: '20px' }}>{msg}</Typography>
-                <div>
-                    { type==='wait' && <CircularProgress />  }
-                    { type==='alert' && <CloseIcon className="largeRedCross" /> }
-                    { type==='ok' && <CheckCircleIcon className='successIcon' /> }
-                </div> 
+                <div className="icon_text_overlay_container">
+                    <Typography variant="h6" style={{ marginTop: '5px' }}>{msg}</Typography>
+                    <div className='background_icon' >
+                        { type==='wait' && <CircularProgress className="largeProgress" />  }
+                        { (type==='error') && <ErrorOutline className="largeError" /> }
+                        { (type === 'alert') && <WarningAmber className = "largeWarning" />}
+                        { type==='ok' && <CheckCircleIcon className='successIcon' /> }
+
+                    </div>
+                </div>
+
                 { type!=='wait' &&              
+                    <div className='popUpControls'>
                     <Button 
-                        variant="contained" 
+                        variant="text" 
                         color="primary" 
                         onClick={handleClose}
                         sx={{ mt: 2 }}
                     >Close
                     </Button>
+                </div>
                 }
             </Box>
         </Modal>

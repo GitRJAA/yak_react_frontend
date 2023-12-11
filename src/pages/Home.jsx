@@ -1,5 +1,4 @@
 import YakAvatar from "../components/YakAvatar/YakAvatar";
-import ModeSelect from "../components/ModeSelect/ModeSelect"
 import WebRTCSTT from "../components/WebRTCSTT/WebRTCSTT"
 import StreamingTextCanvas from "../components/StreamingTextCanvas/StreamingTextCanvas";
 
