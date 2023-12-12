@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useContext, useRef } from 'react';
-import { FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import { Autocomplete, TextField } from '@mui/material';
 
 import AppContext from '../../api/services/AppContext';
@@ -17,6 +16,7 @@ function MenuIDSelector({onSelectedMenuID}) {    // getSelectedMenuID is a funct
   };
 
   const populateMenuOptionsAndDefault = async (encodedTime) => {
+    debugger;
     try {
         const response = await fetch (`${process.env.REACT_APP_LLM_ENDPOINT}/menus/get_as_options/${businessUID}/${encodedTime}`);
         if (response.ok){
@@ -63,6 +63,7 @@ function MenuIDSelector({onSelectedMenuID}) {    // getSelectedMenuID is a funct
             options={menuData.current}
             getOptionLabel={(option) => option.label}
             value={selectedOption}
+            autoHighlight
             onChange={handleSelectChange}
             renderInput={(params) => <TextField {...params} label="Selected Menu" />}
         />

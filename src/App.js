@@ -25,7 +25,8 @@ function App() {
       console.log('Begin: create agent, get session_id, get stt temp token.')
 
     if (process.env.REACT_APP_MODE !== 'dev'){
-      const response = appStartUp(sessionID);
+      debugger;
+      const response = appStartUp();
       if (response!==null){
         const {session_id, temp_token, business_uid } = response;
         console.log('triplet or startup ids',response);

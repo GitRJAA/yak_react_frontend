@@ -5,7 +5,7 @@ const createAgent = (agent_config) => {
 
     var session_meta_data = null ;
     try {
-        const response =  fetch( `${process.env.REACT_APP_LLM_ENDPOINT}/create_agent_session`, {
+        const response =  fetch( `${process.env.REACT_APP_LLM_ENDPOINT}/agent/create/`, {
             method: "POST",
             body: JSON.stringify(agent_config),
             headers: { "Content-Type":"application/json"}

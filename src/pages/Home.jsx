@@ -63,7 +63,7 @@ const Home = () => {
     return (
     <div className="home allpages">
         <MenuIDSelector onSelectedMenuID={handleMenuSelectionChanged} />
-        <WebRTCSTT onSpeechConverted={handleConvertedSpeech} onConversionDone={handleConversionDone} onRecorderStatusChange={handleRecorderStatusChange} token = {tempSttToken}/>
+        <WebRTCSTT onSpeechConverted={handleConvertedSpeech} onConversionDone={handleConversionDone} onRecorderStatusChange={handleRecorderStatusChange} token = {tempSttToken} menuID={menuID}/>
 
         <StreamingTextCanvas text={streamingConvertedText} height="2" label="you"/>
         {/* <LLMInterface session_id = {sessionID} prompt={convertedSpeechText} mode={convoMode} onChunkAvailable={handleChunkAvailable}  onDone={handleStreamDone} /> */}

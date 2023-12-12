@@ -3,22 +3,31 @@ import useWebSocket, {ReadyState} from 'react-use-websocket';
 import RecordRTC, { StereoAudioRecorder } from "recordrtc";
 import { AppContext } from "../../api/services/AppContext";
 
+import { createAgentSession } from "../../api/services/AppStartup.js";
+
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
 
-const WebRTCSTT = ({ onSpeechConverted, onConversionDone, onRecorderStatusChange }) => {
+const WebRTCSTT = ({ onSpeechConverted, onConversionDone, onRecorderStatusChange, menuID }) => {
+  /*
+    onSpeechConverted: func: called everytime chunk of text becomes available
+    onConversionDone: func: called when no more speech to convert. 
+    onRecordingStatusChange: func: call end stop.resume buttons pressed. 
+    menuID: str: the menuID of the currently selected menu. The menu contains, among other things, the 
+            text of the menu and menu_rules. 
+  */
 
     let texts = {};
     //let recorder = null;
     const recorder = useRef(null)
 
     const [socketUrl, setSocketUrl] = useState('');
-    const [shouldConnect, setShouldConnect] = useState(false);
+    const [shouldConnect, setShouldConnect] = useState(false);  //For Websocket.
     const [startIsDisabled, setStartIsDisabled ] = useState(false);
     const [stopIsDisabled, setStopIsDisabled] = useState(true);
     const [resumeIsDisabled, setResumeIsDisabled] = useState(true);
 
-    const { tempSttToken } = useContext(AppContext);
+    const { tempSttToken, businessUID, sessionID } = useContext(AppContext);
 
     // Open the websocket and connect to socketUrl. Parameters are specific to Assembly Ai and may need to be changed to accomodate other providers.
     const { sendJsonMessage, lastMessage, readyState} = useWebSocket(socketUrl,
@@ -99,7 +108,24 @@ const WebRTCSTT = ({ onSpeechConverted, onConversionDone, onRecorderStatusChange
           }
       }, [lastMessage]);
 
+    const createAgentConfig = (menuID) =>{
+      return {
+        'session_id': sessionID,
+        'business_uid': businessUID,
+        'menu_id': menuID,
+        'avatar_personality': ' ',
+        'stream': true      
+      }
+    }
     async function start(e) {
+        
+        //create modal popup because its going to take a while to set up agent and make websocket connection.
+        
+        //create yak_agent with the currently selected menu.
+        const agentConfig = createAgentConfig(menuID);
+        debugger;
+        createAgentSession(agentConfig)
+
         setSocketUrl(`wss://api.assemblyai.com/v2/realtime/ws?sample_rate=16000&token=${tempSttToken}`);
         setShouldConnect(true);
         setStartIsDisabled(true);
@@ -133,7 +159,7 @@ const WebRTCSTT = ({ onSpeechConverted, onConversionDone, onRecorderStatusChange
           <Button variant="contained" disabled={startIsDisabled}  id="start" onClick={start}>Start</Button>
           <Button variant="contained" disabled={stopIsDisabled} id="stop" onClick={pause}>Stop</Button>
           <Button variant="contained" disabled={resumeIsDisabled} id="resume" onClick={resume}>Resume</Button>
-          {/*<p>connection: {connectionStatus}</p> */}
+          <p>connection: {connectionStatus}</p>
         </div>
       </Box>
       );
