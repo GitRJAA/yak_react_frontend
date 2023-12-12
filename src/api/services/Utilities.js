@@ -34,3 +34,16 @@ export const convertDataURLToBlob = (dataURL) => {
         const byteArray = new Uint8Array(byteNumbers);
         return new Blob([byteArray], { type: mimeString });
       };
+
+export const test_connection = () => {
+    fetch(`${process.env.REACT_APP_LLM_ENDPOINT}/test_connection`,{
+        method: 'GET',
+        header: {'Content-Type': 'application/json'}
+    })
+    .then(response => {
+        console.log('test connection ok',response);
+    })
+    .catch( (error) => {
+        console.error('test connection err',error);
+    } )
+}

@@ -18,19 +18,6 @@ function App() {
   const [sessionID, setSessionID] = useState('');
   const [businessUID, setBusinessUID] = useState('');  //Will eventually need to be set by the authorization provider.
 
-  const test_connection = () => {
-    fetch(`${process.env.REACT_APP_LLM_ENDPOINT}/test_connection`,{
-      method: 'GET',
-      header: {'Content-Type': 'application/json'}
-    })
-    .then(response => {
-      console.log('test connection ok',response);
-    })
-    .catch( (error) => {
-      console.error('test connection err',error);
-    } )
-  }
-
   useEffect(()=>{ 
       // Create the agent when the app first starts up. Returns a session_id that is used to track the agent on the server side.
       // To avoid reinitializing a session, sessionID is checked 

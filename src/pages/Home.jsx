@@ -1,5 +1,6 @@
 import YakAvatar from "../components/YakAvatar/YakAvatar";
 import WebRTCSTT from "../components/WebRTCSTT/WebRTCSTT"
+import MenuIDSelector from "../components/MenuIDSelector/MenuIDSelector";
 import StreamingTextCanvas from "../components/StreamingTextCanvas/StreamingTextCanvas";
 
 import LLMInterface from "../components/LLMInterface/LLMInterface";
@@ -17,6 +18,8 @@ const Home = () => {
     const [convertedSpeechText, setConvertedSpeechText] = useState('');
     const [streamingConvertedText, setStreamingConvertedText] = useState('');
     const [responseText, setResponseText] = useState('');
+
+    const [menuID, setMenuID] = useState('');
 
     const [avatarIcon, setAvatarIcon] = useState(process.env.REACT_APP_NOT_LISTENING_ICON);
 
@@ -43,7 +46,6 @@ const Home = () => {
         .catch ((error)=> console.log(error))
 
         console.log('Stream done');
-
     }
 
     const handleRecorderStatusChange = (status) => {
@@ -54,9 +56,15 @@ const Home = () => {
         }
     }
 
+    const handleMenuSelectionChanged = (menuID) => {
+        setMenuID(menuID);
+    }
+
     return (
     <div className="home allpages">
+        <MenuIDSelector onSelectedMenuID={handleMenuSelectionChanged} />
         <WebRTCSTT onSpeechConverted={handleConvertedSpeech} onConversionDone={handleConversionDone} onRecorderStatusChange={handleRecorderStatusChange} token = {tempSttToken}/>
+
         <StreamingTextCanvas text={streamingConvertedText} height="2" label="you"/>
         {/* <LLMInterface session_id = {sessionID} prompt={convertedSpeechText} mode={convoMode} onChunkAvailable={handleChunkAvailable}  onDone={handleStreamDone} /> */}
 
