@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useContext, useRef } from 'react';
 import { FormControl, InputLabel, Select, MenuItem } from '@mui/material';
+import { Autocomplete, TextField } from '@mui/material';
+
 import AppContext from '../../api/services/AppContext';
 
 import './MenuIDSelector.css'
 
 function MenuIDSelector({onSelectedMenuID}) {    // getSelectedMenuID is a function to set the selected menuID in the parent component.
-  const menuData = useRef([{'label':'please wait','value':'none'}]); // expects {'payload':{'options':[{'label':?,'value':<menu_id>},'default':<label of selected option>]}
-  const [selectedMenuID, setSelectedMenuID] = useState('');
+  const menuData = useRef([{'label':'please wait','value':'none'}]); // expects [{'label':?,'value':<menu_id>},'default':<label of selected option>]} 
+  const [selectedOption, setSelectedOption] = useState('');
 
   const { businessUID } = useContext(AppContext);
 
@@ -26,10 +28,10 @@ function MenuIDSelector({onSelectedMenuID}) {    // getSelectedMenuID is a funct
                 menuData.current=content.payload['options']; // Update the state with the API data
                 const selected = findOptionByMenuID(content.payload.default);
                 if (selected){
-                    setSelectedMenuID(selected.value);
+                    setSelectedOption(selected);
                     onSelectedMenuID(selected.value);// pass back to parent.
                 } else {
-                    setSelectedMenuID(menuData.current[0].value)
+                    setSelectedOption(menuData.current[0])
                     onSelectedMenuID(menuData.current[0].value);// pass back to parent.
                 }
             }
@@ -49,25 +51,24 @@ function MenuIDSelector({onSelectedMenuID}) {    // getSelectedMenuID is a funct
   }, []);
 
   // Handle changes in the dropdown selection
-  const handleSelectChange = (event) => {
-    setSelectedMenuID(event.target.value);
-    onSelectedMenuID(event.target.value); // pass back to parent.
+  const handleSelectChange = (event, newOption) => {
+    setSelectedOption(newOption);
+    onSelectedMenuID(newOption.value); // pass back to parent.
   };
 
   return (
-    <FormControl className="width_80_pct menuDropdown">
-      <InputLabel>Menu</InputLabel>
-      <Select
-        value={selectedMenuID}
-        onChange={handleSelectChange}
-      >
-        {menuData.current.map((item) => (
-          <MenuItem key={item.value} value={item.value}>
-            {item.label}
-          </MenuItem>
-        ))}
-      </Select>
-    </FormControl>
+    <>
+        <Autocomplete
+            className='width_80_pct menuDropdown'
+            options={menuData.current}
+            getOptionLabel={(option) => option.label}
+            value={selectedOption}
+            onChange={handleSelectChange}
+            renderInput={(params) => <TextField {...params} label="Selected Menu" />}
+        />
+    </>
+
+
   );
 }
 

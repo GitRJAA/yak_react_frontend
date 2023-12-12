@@ -133,7 +133,7 @@ const WebRTCSTT = ({ onSpeechConverted, onConversionDone, onRecorderStatusChange
           <Button variant="contained" disabled={startIsDisabled}  id="start" onClick={start}>Start</Button>
           <Button variant="contained" disabled={stopIsDisabled} id="stop" onClick={pause}>Stop</Button>
           <Button variant="contained" disabled={resumeIsDisabled} id="resume" onClick={resume}>Resume</Button>
-          <p>connection: {connectionStatus}</p>
+          {/*<p>connection: {connectionStatus}</p> */}
         </div>
       </Box>
       );
