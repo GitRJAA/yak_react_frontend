@@ -26,6 +26,7 @@ const WebRTCSTT = ({ onSpeechConverted, onConversionDone, onRecorderStatusChange
     const [startIsDisabled, setStartIsDisabled ] = useState(false);
     const [stopIsDisabled, setStopIsDisabled] = useState(true);
     const [resumeIsDisabled, setResumeIsDisabled] = useState(true);
+    const connectionStatus = useRef(null);
 
     const { tempSttToken, businessUID, sessionID } = useContext(AppContext);
 
@@ -72,12 +73,12 @@ const WebRTCSTT = ({ onSpeechConverted, onConversionDone, onRecorderStatusChange
 
     }, shouldConnect);
 
-    const connectionStatus = {
+    connectionStatus.current = {
       [ReadyState.CONNECTING]: 'Connecting',
       [ReadyState.OPEN]: 'Open',
       [ReadyState.CLOSING]: 'Closing',
       [ReadyState.CLOSED]: 'Closed',
-      [ReadyState.UNINSTANTIATED]: 'Not connected. Press Start to begin.',
+      [ReadyState.UNINSTANTIATED]: 'Press Start to begin.',
     }[readyState];
 
     const processTranscript = (msgJSON) => {
@@ -117,15 +118,17 @@ const WebRTCSTT = ({ onSpeechConverted, onConversionDone, onRecorderStatusChange
         'stream': true      
       }
     }
-    async function start(e) {
-        
+
+    const createAgent = () => {
         //create modal popup because its going to take a while to set up agent and make websocket connection.
-        
+
         //create yak_agent with the currently selected menu.
         const agentConfig = createAgentConfig(menuID);
-        debugger;
         createAgentSession(agentConfig)
+    }
 
+    async function start(e) {
+        createAgent();
         setSocketUrl(`wss://api.assemblyai.com/v2/realtime/ws?sample_rate=16000&token=${tempSttToken}`);
         setShouldConnect(true);
         setStartIsDisabled(true);
@@ -159,7 +162,7 @@ const WebRTCSTT = ({ onSpeechConverted, onConversionDone, onRecorderStatusChange
           <Button variant="contained" disabled={startIsDisabled}  id="start" onClick={start}>Start</Button>
           <Button variant="contained" disabled={stopIsDisabled} id="stop" onClick={pause}>Stop</Button>
           <Button variant="contained" disabled={resumeIsDisabled} id="resume" onClick={resume}>Resume</Button>
-          <p>connection: {connectionStatus}</p>
+          <p>connection: {connectionStatus.current}</p>
         </div>
       </Box>
       );

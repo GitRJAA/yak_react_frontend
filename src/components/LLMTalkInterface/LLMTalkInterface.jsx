@@ -48,16 +48,21 @@ const LLMTalkInterface = ({ session_id, prompt, onDone }) => {
 
      const processAudioChunk = async (chunk) => {
         if (audioContext) {
-            const buffer = await audioContext.current.decodeAudioData(chunk.buffer);
-            const source = audioContext.current.createBufferSource();
-            source.buffer = buffer;
-            source.connect(audioContext.current.destination);
+            try {
+                const buffer = await audioContext.current.decodeAudioData(chunk.buffer);
+                const source = audioContext.current.createBufferSource();
+                source.buffer = buffer;
+                source.connect(audioContext.current.destination);
 
-            // Add source to queue so its played in the correct sequence.
-            sourceQueue.current.push(source);
+                // Add source to queue so its played in the correct sequence.
+                sourceQueue.current.push(source);
 
-            if (!isStreamPlaying.current) { 
-                playNextChunk();
+                if (!isStreamPlaying.current) { 
+                    playNextChunk();
+                }
+            }
+            catch (err){
+                console.log(`Audio Decoding error: ${err}`)
             }
         }
     };

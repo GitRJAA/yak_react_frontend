@@ -5,7 +5,7 @@ import AppContext from '../../api/services/AppContext';
 
 import './MenuIDSelector.css'
 
-function MenuIDSelector({onSelectedMenuID}) {    // getSelectedMenuID is a function to set the selected menuID in the parent component.
+function MenuIDSelector({onSelectedMenuID }) {    // getSelectedMenuID is a function to set the selected menuID in the parent component.
   const menuData = useRef([{'label':'please wait','value':'none'}]); // expects [{'label':?,'value':<menu_id>},'default':<label of selected option>]} 
   const [selectedOption, setSelectedOption] = useState('');
 
@@ -16,7 +16,6 @@ function MenuIDSelector({onSelectedMenuID}) {    // getSelectedMenuID is a funct
   };
 
   const populateMenuOptionsAndDefault = async (encodedTime) => {
-    debugger;
     try {
         const response = await fetch (`${process.env.REACT_APP_LLM_ENDPOINT}/menus/get_as_options/${businessUID}/${encodedTime}`);
         if (response.ok){
@@ -43,12 +42,14 @@ function MenuIDSelector({onSelectedMenuID}) {    // getSelectedMenuID is a funct
 }
 
   useEffect(() => {
-    const localTime = new Date();
-    const utcTimeString = localTime.toISOString();
-    const encodedTime = encodeURIComponent(utcTimeString);
-    populateMenuOptionsAndDefault(encodedTime);
+    if (businessUID!=='' && businessUID!==null){
+      const localTime = new Date();
+      const utcTimeString = localTime.toISOString();
+      const encodedTime = encodeURIComponent(utcTimeString);
+      populateMenuOptionsAndDefault(encodedTime);
+    }
 
-  }, []);
+  }, [businessUID]);
 
   // Handle changes in the dropdown selection
   const handleSelectChange = (event, newOption) => {
@@ -56,9 +57,10 @@ function MenuIDSelector({onSelectedMenuID}) {    // getSelectedMenuID is a funct
     onSelectedMenuID(newOption.value); // pass back to parent.
   };
 
+  
   return (
-    <>
-        <Autocomplete
+    <> {/* Use conditional load to deal with asynchronous update of businessUID state. buisnessUID required before rendering. */}
+       { (businessUID !=='' && businessUID !== null && selectedOption!=='') ? <Autocomplete 
             className='width_80_pct menuDropdown'
             options={menuData.current}
             getOptionLabel={(option) => option.label}
@@ -66,7 +68,9 @@ function MenuIDSelector({onSelectedMenuID}) {    // getSelectedMenuID is a funct
             autoHighlight
             onChange={handleSelectChange}
             renderInput={(params) => <TextField {...params} label="Selected Menu" />}
-        />
+        />: 
+        <p>Loading...</p>
+       }
     </>
 
 

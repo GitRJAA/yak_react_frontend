@@ -22,10 +22,9 @@ function App() {
       // Create the agent when the app first starts up. Returns a session_id that is used to track the agent on the server side.
       // To avoid reinitializing a session, sessionID is checked 
       console.log('Initializing App.')
-      console.log('Begin: create agent, get session_id, get stt temp token.')
+      console.log('Begin: get session_id, get stt temp token and business_uid.')
 
     if (process.env.REACT_APP_MODE !== 'dev'){
-      debugger;
       const response = appStartUp();
       if (response!==null){
         const {session_id, temp_token, business_uid } = response;
@@ -43,12 +42,6 @@ function App() {
     }
   }
   , []);
-
-    useEffect(()=>{
-      console.log('sessionid',{sessionID});
-      console.log('temp_token',{tempSttToken});
-      console.log('businessUID',{businessUID});
-    },[sessionID, tempSttToken, businessUID]);
 
   return (
       <AppContext.Provider value = { {sessionID, tempSttToken, businessUID}} >

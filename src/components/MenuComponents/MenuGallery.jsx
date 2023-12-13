@@ -66,14 +66,16 @@ export default function MenuGallery({menu_sources, onSelect }) {
   }
 
   useEffect(() => {
-    if (menu_sources){
-      // If menu data directly passed in then use it. 
-      setMenus(menu_sources);
-    } else {
-      // else get the list of Menu objects from the backend. 
-      showAllMenus();
+    if (businessUID!==null && businessUID!==''){
+      if (menu_sources){
+        // If menu data directly passed in then use it. 
+        setMenus(menu_sources);
+      } else {
+        // else get the list of Menu objects from the backend. 
+        showAllMenus();
+      }
     }
-  }, []);
+  }, [businessUID]);
 
 
   if (loading) return (
