@@ -3,13 +3,14 @@ import useWebSocket, {ReadyState} from 'react-use-websocket';
 import RecordRTC, { StereoAudioRecorder } from "recordrtc";
 import { AppContext } from "../../api/services/AppContext";
 
-import { createAgentSession } from "../../api/services/AppStartup.js";
-
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
 
 const WebRTCSTT = ({ onSpeechConverted, onConversionDone, onRecorderStatusChange, menuID }) => {
   /*
+    This component handles the webRTC connection with the speech-to-text provider Asemebly AI. It has not been tested with other providers.
+
+
     onSpeechConverted: func: called everytime chunk of text becomes available
     onConversionDone: func: called when no more speech to convert. 
     onRecordingStatusChange: func: call end stop.resume buttons pressed. 
@@ -109,26 +110,7 @@ const WebRTCSTT = ({ onSpeechConverted, onConversionDone, onRecorderStatusChange
           }
       }, [lastMessage]);
 
-    const createAgentConfig = (menuID) =>{
-      return {
-        'session_id': sessionID,
-        'business_uid': businessUID,
-        'menu_id': menuID,
-        'avatar_personality': ' ',
-        'stream': true      
-      }
-    }
-
-    const createAgent = () => {
-        //create modal popup because its going to take a while to set up agent and make websocket connection.
-
-        //create yak_agent with the currently selected menu.
-        const agentConfig = createAgentConfig(menuID);
-        createAgentSession(agentConfig)
-    }
-
     async function start(e) {
-        createAgent();
         setSocketUrl(`wss://api.assemblyai.com/v2/realtime/ws?sample_rate=16000&token=${tempSttToken}`);
         setShouldConnect(true);
         setStartIsDisabled(true);

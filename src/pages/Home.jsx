@@ -6,20 +6,22 @@ import StreamingTextCanvas from "../components/StreamingTextCanvas/StreamingText
 import LLMInterface from "../components/LLMInterface/LLMInterface";
 import LLMTalkInterface from "../components/LLMTalkInterface/LLMTalkInterface";
 
+import { createAgentSession } from "../api/services/AppStartup.js";
+
 import { useState, useContext } from "react";
 import { AppContext } from "../api/services/AppContext";
 import { getLastResponse } from "../api/services/Utilities";
+
+import { NULL_MENU } from "../data/GlobalConstants.jsx";
 
 import './allpages.css'
 
 const Home = () => {
 
-    const {sessionID, tempSttToken } = useContext(AppContext);
+    const {sessionID, tempSttToken, businessUID } = useContext(AppContext);
     const [convertedSpeechText, setConvertedSpeechText] = useState('');
     const [streamingConvertedText, setStreamingConvertedText] = useState('');
     const [responseText, setResponseText] = useState('');
-
-    const [menuID, setMenuID] = useState('');
 
     const [avatarIcon, setAvatarIcon] = useState(process.env.REACT_APP_NOT_LISTENING_ICON);
 
@@ -55,15 +57,38 @@ const Home = () => {
             setAvatarIcon(process.env.REACT_APP_LISTENING_ICON)
         }
     }
+    const createAgentConfig = (menuID) =>{
+        // See backend SessionStart(BaseModel) class
+        return {
+          'session_id': sessionID,
+          'business_uid': businessUID,
+          'menu_id': menuID,
+          'avatar_personality': ' ',
+          'stream': true      
+        }
+      }
+  
+      const createAgent = (menuID) => {
+        
+          //create modal popup because its going to take a while to set up agent and make websocket connection.
+  
+          //create yak_agent with the currently selected menu.
+          if (menuID !== NULL_MENU) {
+            console.log(`Create agent for menuID {menuID}`);
+            const agentConfig = createAgentConfig(menuID);
+            createAgentSession(agentConfig); //This will overwrite the current agent and restart the conversation. This is reasonable as a new menu warrants a new start.
+          }          
+      }
 
     const handleMenuSelectionChanged = (menuID) => {
-        setMenuID(menuID);
+        console.log('Begin create agent')
+        createAgent(menuID);
     }
 
     return (
     <div className="home allpages">
         <MenuIDSelector onSelectedMenuID={handleMenuSelectionChanged} />
-        <WebRTCSTT onSpeechConverted={handleConvertedSpeech} onConversionDone={handleConversionDone} onRecorderStatusChange={handleRecorderStatusChange} token = {tempSttToken} menuID={menuID}/>
+        <WebRTCSTT onSpeechConverted={handleConvertedSpeech} onConversionDone={handleConversionDone} onRecorderStatusChange={handleRecorderStatusChange} token = {tempSttToken} />
 
         <StreamingTextCanvas text={streamingConvertedText} height="2" label="you"/>
         {/* <LLMInterface session_id = {sessionID} prompt={convertedSpeechText} mode={convoMode} onChunkAvailable={handleChunkAvailable}  onDone={handleStreamDone} /> */}

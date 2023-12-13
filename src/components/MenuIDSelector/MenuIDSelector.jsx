@@ -2,11 +2,13 @@ import React, { useState, useEffect, useContext, useRef } from 'react';
 import { Autocomplete, TextField } from '@mui/material';
 
 import AppContext from '../../api/services/AppContext';
+import { NULL_MENU } from '../../data/GlobalConstants';
 
 import './MenuIDSelector.css'
 
+
 function MenuIDSelector({onSelectedMenuID }) {    // getSelectedMenuID is a function to set the selected menuID in the parent component.
-  const menuData = useRef([{'label':'please wait','value':'none'}]); // expects [{'label':?,'value':<menu_id>},'default':<label of selected option>]} 
+  const menuData = useRef([{'label':'please wait','value':NULL_MENU}]); // expects [{'label':?,'value':<menu_id>},'default':<label of selected option>]} 
   const [selectedOption, setSelectedOption] = useState('');
 
   const { businessUID } = useContext(AppContext);
@@ -21,7 +23,7 @@ function MenuIDSelector({onSelectedMenuID }) {    // getSelectedMenuID is a func
         if (response.ok){
             const content = await response.json();
             if (!content.payload || content.payload['options'].length===0){
-                menuData.current=[{"label":"No menus found","value":"none"}];
+                menuData.current=[{"label":"No menus found","value":NULL_MENU}];
             }
             if (content.payload && (content.payload['options'].length)>0){
                 menuData.current=content.payload['options']; // Update the state with the API data
