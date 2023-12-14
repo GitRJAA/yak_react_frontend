@@ -7,7 +7,7 @@ import { NULL_MENU } from '../../data/GlobalConstants';
 import './MenuIDSelector.css'
 
 
-function MenuIDSelector({onSelectedMenuID }) {    // getSelectedMenuID is a function to set the selected menuID in the parent component.
+function MenuIDSelector({onSelectedMenuID, defaultMenuID }) {    // getSelectedMenuID is a function to set the selected menuID in the parent component.
   const menuData = useRef([{'label':'please wait','value':NULL_MENU}]); // expects [{'label':?,'value':<menu_id>},'default':<label of selected option>]} 
   const [selectedOption, setSelectedOption] = useState('');
 
@@ -27,7 +27,8 @@ function MenuIDSelector({onSelectedMenuID }) {    // getSelectedMenuID is a func
             }
             if (content.payload && (content.payload['options'].length)>0){
                 menuData.current=content.payload['options']; // Update the state with the API data
-                const selected = findOptionByMenuID(content.payload.default);
+                const _default = defaultMenuID ? defaultMenuID : content.payload.default;  //Allow time-of-day selection to be overriden if a value is passed in.
+                const selected = findOptionByMenuID(_default);
                 if (selected){
                     setSelectedOption(selected);
                     onSelectedMenuID(selected.value);// pass back to parent.

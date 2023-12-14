@@ -6,6 +6,10 @@ import { TimePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import {AdapterDateFns}  from '@mui/x-date-pickers/AdapterDateFns';
 import Autocomplete from '@mui/material/Autocomplete';
 
+import Home from '../../pages/Home';
+
+import { useNavigate} from 'react-router-dom'; // Used for redirection to Home page via Routes
+  
 
 import './TextEditor.css'; // Import the CSS file
 
@@ -14,6 +18,8 @@ const TextEditor = ({menu_id, popUpHandlers }) => {
   const [options, setOptions] = useState([]);
   const [selectedOption, setSelectedOption] = useState(null);  //{'label':?,'value'}
   const applyBtnRef = useRef(null); // A ref for the apply button so that it can be scrolled to after editing combo-box
+
+  const navigate = useNavigate(); //For navigation to home.
 
   //menuData is an object containing the mandatory fields in the yakwithai.voice_chat.datat_models.Menu dataclass.
   // Careful attention needed to format Timepickers correctly.
@@ -25,6 +31,7 @@ const TextEditor = ({menu_id, popUpHandlers }) => {
     rules: ''
   });
 
+  
   const [loading, setLoading] = useState(false)
 
   // Popup configurations for common tasks.
@@ -71,7 +78,7 @@ const TextEditor = ({menu_id, popUpHandlers }) => {
     fetchAIEditorPrompts();
     }, []);
 
-  const updateMenu = async() => {
+  const updateMenu = async(newPage = "gallery" ) => {
     // Send form data back to database
     popUpHandlers[0](msg_updating);
 
@@ -90,7 +97,9 @@ const TextEditor = ({menu_id, popUpHandlers }) => {
         console.log(`Fetch error updating menu ${menuData.menu_id}: error ${e}`);
     }
     popUpHandlers[0](msg_success);
-    popUpHandlers[1]("gallery")
+    if (newPage!=='' && newPage !== 'none'){
+      popUpHandlers[1](newPage); //Redirect to submenu within Menu collection.
+    }
   }
 
   if (loading) return (
@@ -172,6 +181,11 @@ const TextEditor = ({menu_id, popUpHandlers }) => {
     popUpHandlers[0](msg_success);
   }
 
+  const handleRun = (event) =>{
+    updateMenu('none'); //updateMenu withour redirect.
+    navigate('/Home',{ state: {override_menu_id : menuData.menu_id}});
+  }
+
   return (
     <div className="my-component-container">
         <TextField
@@ -236,12 +250,22 @@ const TextEditor = ({menu_id, popUpHandlers }) => {
         />
 
         <div className="button-container">
-            <Button variant="contained" color="primary" onClick={updateMenu}>
-                Update
-            </Button>
-            <Button variant="outlined" color="secondary" onClick={undoChanges} style={{ marginLeft: '10px' }}>
-                Undo
-            </Button>
+          <Tooltip title='Save changes and start chatting with the menu.' enterDelay={1000} >
+              <Button variant="outlined" color="secondary" onClick={handleRun} style={{ marginRight: '15px' }}>
+                  Run 
+              </Button>
+            </Tooltip>
+            <Tooltip title = 'Save the changes and go to the gallery.' enterDelay={1000}>
+              <Button variant="contained" color="primary" onClick={updateMenu} >
+                  Update
+              </Button>
+            </Tooltip>
+            <Tooltip title="Undo the changes back to the last saved version." enterDelay={1000}>
+              <Button variant="outlined" color="secondary" onClick={undoChanges} style={{ marginLeft: '15px' }}>
+                  Undo
+              </Button>
+            </Tooltip>
+
         </div>
     </div>
 );

@@ -13,7 +13,6 @@ const createAgent = (agent_config) => {
     
         if (response.ok) {
             session_meta_data =  response.json();
-            console.log('ok',response.statusText)
         }
         else {
             throw new Error(`Failed to create Agent with error: ${response.statusText}`)
@@ -23,7 +22,6 @@ const createAgent = (agent_config) => {
         console.log('create error',e)
     }
 
-    //console.log('session_meta',session_meta_data)
     return session_meta_data;
 };
 

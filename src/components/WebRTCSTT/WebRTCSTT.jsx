@@ -6,7 +6,7 @@ import { AppContext } from "../../api/services/AppContext";
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
 
-const WebRTCSTT = ({ onSpeechConverted, onConversionDone, onRecorderStatusChange, menuID }) => {
+const WebRTCSTT = ({ onSpeechConverted, onConversionDone, onRecorderStatusChange, menuID, autoStart }) => {
   /*
     This component handles the webRTC connection with the speech-to-text provider Asemebly AI. It has not been tested with other providers.
 
@@ -29,9 +29,21 @@ const WebRTCSTT = ({ onSpeechConverted, onConversionDone, onRecorderStatusChange
     const [resumeIsDisabled, setResumeIsDisabled] = useState(true);
     const connectionStatus = useRef(null);
 
-    const { tempSttToken, businessUID, sessionID } = useContext(AppContext);
+    const { tempSttToken } = useContext(AppContext);
 
-    // Open the websocket and connect to socketUrl. Parameters are specific to Assembly Ai and may need to be changed to accomodate other providers.
+    useEffect(()=>{
+      if (autoStart){
+        startSTTConnection();
+      }
+    },[]);
+
+    /*
+      Websocket connection and STT text processing (assemblyAI)
+
+       + Parameters are specific to Assembly Ai and may 
+         need to be changed to accomodate other providers.
+    */
+
     const { sendJsonMessage, lastMessage, readyState} = useWebSocket(socketUrl,
         {
             onOpen: () => {
@@ -110,14 +122,23 @@ const WebRTCSTT = ({ onSpeechConverted, onConversionDone, onRecorderStatusChange
           }
       }, [lastMessage]);
 
-    async function start(e) {
-        setSocketUrl(`wss://api.assemblyai.com/v2/realtime/ws?sample_rate=16000&token=${tempSttToken}`);
-        setShouldConnect(true);
-        setStartIsDisabled(true);
-        setStopIsDisabled(false);
-        setResumeIsDisabled(true)
-        onRecorderStatusChange('recording')
+    /*
+      STT Listenting controls
+    */
+
+    const startSTTConnection = async()   =>{
+      setSocketUrl(`wss://api.assemblyai.com/v2/realtime/ws?sample_rate=16000&token=${tempSttToken}`);
+      setShouldConnect(true);
+      setStartIsDisabled(true);
+      setStopIsDisabled(false);
+      setResumeIsDisabled(true)
+      onRecorderStatusChange('recording')
     }
+
+    async function start(e) {
+      startSTTConnection();
+    }
+
     async function pause(e) {
         if (recorder.current) {
           console.log('Requested to pause recording voice.')

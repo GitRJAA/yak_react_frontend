@@ -52,6 +52,7 @@ function App() {
         <main>
           <Routes>
             <Route path="/" element={<Home />} />
+            <Route path="home" element={<Home /> } />
             <Route path="textchat" element = {<TextChat />} />
             <Route path="menus" element={<Menus />} />
             <Route path="avatars" element={<Avatars />} />
