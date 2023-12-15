@@ -153,7 +153,7 @@ const CameraCapture = ({popUpHandlers}) => {
         const dataURL = photoSrc
         const blob = convertDataURLToBlob(dataURL);  // Data must be passed as blob to fastAPI.
         const file = new File([blob], 'upload.png', { type: 'image/png' });
-      debugger;
+
         const formData = new FormData();
         formData.append('business_uid', businessUID);
         formData.append('file', file);

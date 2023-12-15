@@ -13,6 +13,7 @@ import { useNavigate} from 'react-router-dom'; // Used for redirection to Home p
 
 import './TextEditor.css'; // Import the CSS file
 
+
 const TextEditor = ({menu_id, popUpHandlers }) => {
   const { businessUID } = useContext(AppContext);
   const [options, setOptions] = useState([]);

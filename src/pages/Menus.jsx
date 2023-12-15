@@ -9,6 +9,8 @@ import ModalPopup from '../components/ModalPopup/ModalPopup';
 import Smiley from "../assets/smiles.png";
 import Twist from'../assets/twist_logo.png';
 
+import './allpages.css'
+
 export default function Menus() {
 
     const subMenuOptions = ['gallery', 'camera','file','menu_metadata_editor']

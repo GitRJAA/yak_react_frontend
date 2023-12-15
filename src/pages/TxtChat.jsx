@@ -10,12 +10,6 @@ import {
 const TextChat = () => {
     // Uses https://github.com/chatscope/chat-ui-kit-react for UI creation.
 
-
-
-
-
-    
-
     return (
         <div style={{ position: "relative", height: "500px" }}>
         <MainContainer>

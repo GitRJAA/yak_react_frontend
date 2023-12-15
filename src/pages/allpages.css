@@ -2,3 +2,14 @@
     max-width: 1024px;
     margin:auto;
 }
+
+.my-component-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+}
+
+.working_area {
+    width: 80%
+}

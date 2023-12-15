@@ -36,7 +36,7 @@ const style = {
 
 
 const ModalPopup = ({context, handleClose }) => {
-    console.log('popup type', context);
+    //console.log('popup type', context);
     const {action, msg, type} = context;
     return (
         <Modal open={(action === 'open')} onClose={handleClose}>

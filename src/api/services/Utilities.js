@@ -47,3 +47,25 @@ export const test_connection = () => {
         console.error('test connection err',error);
     } )
 }
+
+export const isDictionary = (obj) => {
+    // Hack to check in js if object is a dictionary
+    if (obj !== null && typeof obj === 'object') {
+      for (const key in obj) {
+        if (obj.hasOwnProperty(key)) {
+          return true; // At least one own property exists, so it's a dictionary-like object
+        }
+      }
+    }
+    return false; 
+  }
+
+export const format = (inputString, replacements) =>{
+    // Replace placeholder {0].{1} etc with corresponding replacement value
+    let counter = 0;
+    for (const element in replacements) {
+      const regex = new RegExp(`\\{${counter}\\}`, 'g');
+      inputString = inputString.replace(regex, replacements[element]);
+      counter++;
+    }
+} 
