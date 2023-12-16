@@ -10,20 +10,21 @@ The app runs in the browser and in order for the browser to access the camera (u
 
 ### Environment variables
 
+```
 Add these to the .env file located at the same level as you /src folder:
 
-REACT_APP_LLM_ENDPOINT =  https://<<yourdomain>>    <- your api server
-REACT_APP_LISTENING_ICON = smiles.png  <- image to display when listenting. Must be located in the src/asset folder
-REACT_APP_NOT_LISTENING_ICON = smiles_with_headphones.png  <- ... when not listening.
-REACT_APP_MODE = dev  <- setting to dev will prevent it from trying to connect to your paid speech to text service.
-REACT_APP_MAX_CAMERA_PIXEL_WIDTH = 1024  <- pixel width of camera, aspect ratio is preserved automatically.
+REACT_APP_LLM_ENDPOINT =  https://..yourdomain..     #your api server
+REACT_APP_LISTENING_ICON = smiles.png      #image to display when listenting. Must be located in the src/asset folder
+REACT_APP_NOT_LISTENING_ICON = smiles_with_headphones.png      #... when not listening.
+REACT_APP_MODE = dev        #setting to dev will prevent it from trying to connect to your paid speech to text service.
+REACT_APP_MAX_CAMERA_PIXEL_WIDTH = 1024  #pixel width of camera, aspect ratio is preserved automatically.
 
 You'll also need to create a .env.local filed
 
-REACT_APP_CLIENT_AUTHORIZATION_KEY = inpracticethiswillbesomecryptostuff <- this is used for development purposes. 
-REACT_APP_TEMP_TOKEN_PATH = get_temp_token  <- the endpoint used to get a temporary authentication token for the speech-to-text service (paid).
+REACT_APP_CLIENT_AUTHORIZATION_KEY = inpracticethiswillbesomecryptostuff #this is used for development purposes. 
+REACT_APP_TEMP_TOKEN_PATH = get_temp_token  #the endpoint used to get a temporary authentication token for the speech-to-text service (paid).
 
-
+```
 
 ### Running it.
 
