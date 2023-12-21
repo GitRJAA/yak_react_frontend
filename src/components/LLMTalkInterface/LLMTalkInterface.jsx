@@ -17,7 +17,8 @@ const LLMTalkInterface = ({ session_id, prompt, onDone }) => {
   // constants for action endpoints.
   const ActionEndPoint = { 
         SAY: 'get_agent_to_say',
-        CONVERSATION: 'talk_with_agent'
+        CONVERSATION: 'talk_with_agent',
+        AVATAR: 'agent/talk_with_avatar'
       }
    
   const audioContext = useRef(null);
@@ -47,14 +48,20 @@ const LLMTalkInterface = ({ session_id, prompt, onDone }) => {
     }
 
      const processAudioChunk = async (chunk) => {
+        // Process and queue the audio
+        // @args: chunk: ArrayBuffer : contains the audio byte data.
         if (audioContext) {
             try {
-                const buffer = await audioContext.current.decodeAudioData(chunk.buffer);
+            
+                //const id = Math.floor(Math.random() * 1000000);
+                //console.log(`START ${id}: chunk buffer size ${chunk.byteLength}`)
+                const buffer = await audioContext.current.decodeAudioData(chunk);
                 const source = audioContext.current.createBufferSource();
                 source.buffer = buffer;
                 source.connect(audioContext.current.destination);
 
                 // Add source to queue so its played in the correct sequence.
+                //console.log(`FINISH ${id}: push to queue chunk buffer size ${chunk.byteLength}`)
                 sourceQueue.current.push(source);
 
                 if (!isStreamPlaying.current) { 
@@ -81,19 +88,47 @@ const LLMTalkInterface = ({ session_id, prompt, onDone }) => {
           }
       };
  
+        
+    const base64ToArrayBuffer = (base64) => {
+        // Helper function to convert base64 utf-8 string to ArrayBuffer of audio bytes.
+        // TODO - not optimal for large base64 strings.
+        const binaryString = window.atob(base64);
+        const length = binaryString.length;
+        const bytes = new Uint8Array(length);
+        for (let i = 0; i < length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+        }
+        return bytes.buffer;
+    };
+    
+    const processContent = async (part) => {
+        //Process the different sections of the data audio/viseme(of json) data.
+        if (part.includes('Content-Type: audio/mpeg')) {
+            // Handle audio data
+            const audioChunk = part.split('\r\n\r\n')[1];
+            const arrayBuffer = base64ToArrayBuffer(audioChunk); //Convert base64encoded UTF-8 to an ArrayBuffer as required by webAPI for audio.      
+            await processAudioChunk(arrayBuffer);
+        } else if (part.includes('Content-Type: application/json')) {
+            // Handle viseme data.
+            const metadataJSON = part.split('\r\n\r\n')[1];
+            console.log(metadataJSON);
+        }
+    }
+
     useEffect(() => {
         if (typeof prompt !== 'undefined' && prompt!==''){
             // Initialize Audio Context only once.
             if (!audioContext.current){
               audioContext.current = new (window.AudioContext || window.webkitAudioContext)();
             }
+            const boundary = 'frame'; 
 
             // Fetch Audio Data
             const fetchData = async () => {
                 let response = null;
 
                 if (!isStreamPlaying.current){
-                  response = await sendPrompt(prompt, ActionEndPoint.CONVERSATION); //Streams audio back 1 sentance at a time.
+                  response = await sendPrompt(prompt, ActionEndPoint.AVATAR); //Streams audio and meta-data back.
                 } else {
                   //Allow yak to be interrupted while its speaking.
                   isStreamPlaying.current = false;
@@ -103,21 +138,55 @@ const LLMTalkInterface = ({ session_id, prompt, onDone }) => {
                 }
 
                 const reader = response.body.getReader();  //response.body exposes a ReadableStream
+                let currentData = '';
 
                 while (true) {
-                    const { value, done } = await reader.read(); // Reads one sentance of audio.
+                    const { value, done } = await reader.read(); // Returns contents of streamreader as ArrayBuffer (Uint8Array) 
                     if (done) {
+                        //Flush the remaining data
+                        const parts = currentData.split(`--${boundary}`);
+                        if (parts.length>1){
+                            await processContent(parts[1])
+                        }
                         break;
                     }
-                    //queue and play the chunk.
-                    processAudioChunk(value);
+
+                    /* Convert the ArrayBuffer bytes back to string data. This string data will contains 
+                        human readable strings and the audio encoded as base64 UTF-8. Its possible that 
+                        the audio data is split into several 'sub-chunks' so they must be reassembled into 
+                        the complete chunk before playing.
+                    */
+                    const chunk = new TextDecoder().decode(value); 
+                    currentData += chunk;
+
+                    while (true) {
+                        debugger;
+                        const start_index = currentData.indexOf(`--${boundary}`); 
+                        if (start_index>=0){
+                            const end_index = currentData.indexOf(`--${boundary}`, start_index+1);
+                            if (end_index>=0){
+                                // The we have a pair of boundary markers so we can process the content
+                                const part = currentData.slice(start_index,end_index);                      
+                                // Process each part (audio or metadata)
+                                await processContent(part);
+                                currentData= currentData.slice(end_index); //Drop the prcessed data.
+                            } else {
+                                break; //keep reading and accumulating current data until we have assembled entire chunks.
+                            }
+                        } else {
+                            break;
+                        };
+                      }
                 }
-            };
-          fetchData()
+            }
+            fetchData();
         }
     }, [prompt]);
 
-
 }
 
+
+
 export default LLMTalkInterface;
+
+

@@ -44,47 +44,61 @@ const WebRTCSTT = ({ onSpeechConverted, onConversionDone, onRecorderStatusChange
          need to be changed to accomodate other providers.
     */
 
-    const { sendJsonMessage, lastMessage, readyState} = useWebSocket(socketUrl,
-        {
-            onOpen: () => {
-                  console.log('AssemplyAI websocket opened');
-                  navigator.mediaDevices
-                  .getUserMedia({ audio: true })
-                  .then((stream) => {
-                    recorder.current = new RecordRTC(stream, {
-                    type: "audio",
-                    mimeType: "audio/webm;codecs=pcm", // endpoint requires 16bit PCM audio
-                    recorderType: StereoAudioRecorder,
-                    timeSlice: 250, // set 250 ms intervals of data that sends to AAI
-                    desiredSampRate: 16000,
-                    numberOfAudioChannels: 1, // realtime requires only one channel
-                    bufferSize: 16384,
-                    audioBitsPerSecond: 128000,
-                    ondataavailable: (blob) => {
-                      const reader = new FileReader();
-                      reader.onload = () => {
-                        const base64data = reader.result;
-                      sendJsonMessage({
-                        audio_data: base64data.split("base64,")[1],
-                      });
-                    };
-                    reader.readAsDataURL(blob);
-                  },
-                })
-                recorder.current.startRecording();
-              })
-            },
+    function createAndStartRecorder(stream) {
+      recorder.current = new RecordRTC(stream, {
+        type: "audio",
+        mimeType: "audio/webm;codecs=pcm",
+        recorderType: StereoAudioRecorder,
+        timeSlice: 250,
+        desiredSampRate: 16000,
+        numberOfAudioChannels: 1,
+        bufferSize: 16384,
+        audioBitsPerSecond: 128000,
+        ondataavailable: (blob) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const base64data = reader.result;
+            sendJsonMessage({
+              audio_data: base64data.split("base64,")[1],
+            });
+          };
+          reader.readAsDataURL(blob);
+        },
+      });
+      recorder.current.startRecording();
+    }
 
-            onClose: (e) => {
-              console.log(`WS closed for reason: ${e.reason}`);
-            },
-            shouldReconnect: (closeEvent) => {
-              return true;
-            },
-            reconnectAttempts: 5,
-            reconnectInterval: 3000,
-
+    const { sendJsonMessage, lastMessage, readyState} = useWebSocket(socketUrl, {
+      onOpen: () => {
+        console.log('AssemplyAI websocket opened');
+        navigator.mediaDevices
+          .getUserMedia({ audio: true })
+          .then((stream) => {
+            // Check if there's an existing recorder and stop it before creating a new one
+            if (recorder.current) {
+              recorder.current.stopRecording(() => {
+                // Ensure that the previous recorder is completely stopped before starting a new one
+                recorder.current = null;
+                createAndStartRecorder(stream);
+              });
+            } else {
+              createAndStartRecorder(stream);
+            }
+          });
+      },
+    
+      onClose: (e) => {
+        console.log(`WS closed for reason: ${e.reason}`);
+        // You may want to handle WebSocket closure and reconnection logic here
+      },
+    
+      shouldReconnect: (closeEvent) => {
+        return true;
+      },
+      reconnectAttempts: 5,
+      reconnectInterval: 3000,
     }, shouldConnect);
+    
 
     connectionStatus.current = {
       [ReadyState.CONNECTING]: 'Connecting',
