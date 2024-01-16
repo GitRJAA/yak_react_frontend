@@ -17,7 +17,7 @@ const LLMTalkInterface = ({ session_id, prompt, onDone }) => {
   // constants for action endpoints.
   const ActionEndPoint = { 
         SAY: 'get_agent_to_say',
-        CONVERSATION: 'talk_with_agent',
+        VOICE_ONLY: 'talk_with_agent',
         AVATAR: 'agent/talk_with_avatar'
       }
    
@@ -168,7 +168,7 @@ const LLMTalkInterface = ({ session_id, prompt, onDone }) => {
                     currentData += chunk;
 
                     while (true) {
-                        debugger;
+                        //debugger;
                         const start_index = currentData.indexOf(`--${boundary}`); 
                         if (start_index>=0){
                             const end_index = currentData.indexOf(`--${boundary}`, start_index+1);
