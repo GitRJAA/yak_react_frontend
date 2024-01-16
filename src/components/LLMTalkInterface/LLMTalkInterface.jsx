@@ -115,6 +115,13 @@ const LLMTalkInterface = ({ session_id, prompt, onDone }) => {
         }
     }
 
+    const interrupt = () => {
+        // Call endpoint to interrupt speech synthesis. This stops sentance level yeilding of text to STT.
+        // It does not clear the audio queue.
+        const response =  fetch(`${process.env.REACT_APP_LLM_ENDPOINT}/agent/interrupt/${session_id}`);
+        return response
+    }
+
     useEffect(() => {
         if (typeof prompt !== 'undefined' && prompt!==''){
             // Initialize Audio Context only once.
@@ -133,6 +140,7 @@ const LLMTalkInterface = ({ session_id, prompt, onDone }) => {
                   //Allow yak to be interrupted while its speaking.
                   isStreamPlaying.current = false;
                   sourceToPlay.current.stop();
+                  response = interrupt();
                   response = await sendPrompt('Sorry, can you say that again.', ActionEndPoint.SAY);
                   sourceQueue.current = [];
                 }
