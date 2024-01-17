@@ -14,17 +14,24 @@ import { useEffect, useRef } from 'react'
 
 const LLMTalkInterface = ({ session_id, prompt, onDone }) => {
 
-  // constants for action endpoints.
-  const ActionEndPoint = { 
-        SAY: 'get_agent_to_say',
-        VOICE_ONLY: 'talk_with_agent',
-        AVATAR: 'agent/talk_with_avatar'
-      }
-   
-  const audioContext = useRef(null);
-  const sourceQueue = useRef([]);
-  const isStreamPlaying = useRef(false);
-  const sourceToPlay = useRef(null); //current buffer being played.
+    // constants for action endpoints.
+    const ActionEndPoint = { 
+            SAY: 'get_agent_to_say',
+            VOICE_ONLY: 'talk_with_agent',
+            AVATAR: 'agent/talk_with_avatar'
+        }
+    
+    const audioContext = useRef(null);  // Used to hold the webAPI audioContext reference.
+ 
+    // A queue to hold the aduio and json/viseme data resp. IMPORTANT this must in 1-1 correspondance with the 
+    // audioSourceQueue if viseme data being used. TODO There is a risk that due to errors in decoding a part
+    // that these queues become misaligned. It would be better to accumulate a tuple of audio and json and push that on.
+    const audioSourceQueue = useRef([]);   
+    const jsonDataQueue = useRef([]);    
+
+    const isStreamPlaying = useRef(false); // Flag indicating if audio is being played or not.
+    const sourceToPlay = useRef(null); //current buffer being played.
+    const jsonToPlay = useRef(null); // current viseme data.
 
     const sendPrompt = async ( processed_prompt, mode ) => {
         let response = await fetch(`${process.env.REACT_APP_LLM_ENDPOINT}/${mode}`,{
@@ -47,12 +54,12 @@ const LLMTalkInterface = ({ session_id, prompt, onDone }) => {
         return response;
     }
 
-     const processAudioChunk = async (chunk) => {
-        // Process and queue the audio
+     const processAndQueueAudioChunk = async (chunk) => {
+        // Process and queue the audio as a webAPI playable source.
         // @args: chunk: ArrayBuffer : contains the audio byte data.
+
         if (audioContext) {
-            try {
-            
+            try {            
                 //const id = Math.floor(Math.random() * 1000000);
                 //console.log(`START ${id}: chunk buffer size ${chunk.byteLength}`)
                 const buffer = await audioContext.current.decodeAudioData(chunk);
@@ -62,7 +69,7 @@ const LLMTalkInterface = ({ session_id, prompt, onDone }) => {
 
                 // Add source to queue so its played in the correct sequence.
                 //console.log(`FINISH ${id}: push to queue chunk buffer size ${chunk.byteLength}`)
-                sourceQueue.current.push(source);
+                audioSourceQueue.current.push(source);
 
                 if (!isStreamPlaying.current) { 
                     playNextChunk();
@@ -74,21 +81,43 @@ const LLMTalkInterface = ({ session_id, prompt, onDone }) => {
         }
     };
 
-      const playNextChunk = () => {
-          if (sourceQueue.current.length > 0) {
-              sourceToPlay.current = sourceQueue.current.shift();
-              sourceToPlay.current.start(0);
-              sourceToPlay.current.onended = () => {
-                  playNextChunk();
-              };
-              isStreamPlaying.current = true;
-          } else {
-              isStreamPlaying.current = false;
-              onDone(); 
-          }
-      };
- 
+    const processAndQueueJsonData = async (data) =>{
+        // Add visemses json data to the queue.
+        // @args:
+        //  data: List of json string {start: float, end: float, event: int} representing start 
+        //        and end time in milliseconds of the viseme event and the event id provided by 
+        //        the viseme source. These events may need to be mapped to those used by the avatar model.
         
+        jsonDataQueue.current.push(data);
+        if (!isStreamPlaying.current) { 
+            playNextChunk();
+        }
+    }
+    
+    const processVisemeData = (viseme_list) => {
+        // Convert the data into the format required by the Avatar model. Depending on the source, 
+        // this might be just translation of the viseme values or might be reformating
+        
+        // TODO
+        return viseme_list
+    }
+
+    const playNextChunk = () => {
+        // Play an audio source but only if there is viseme data to go with it. 
+        if ((audioSourceQueue.current.length > 0) && (jsonDataQueue.current.length>0)) {
+            sourceToPlay.current = audioSourceQueue.current.shift();
+            jsonToPlay.current = processVisemeData(jsonDataQueue.current.shift());
+            sourceToPlay.current.start(0);
+            sourceToPlay.current.onended = () => {
+                playNextChunk();
+            };
+            isStreamPlaying.current = true;
+        } else {
+            isStreamPlaying.current = false;
+            onDone(); 
+        }
+    };
+ 
     const base64ToArrayBuffer = (base64) => {
         // Helper function to convert base64 utf-8 string to ArrayBuffer of audio bytes.
         // TODO - not optimal for large base64 strings.
@@ -107,11 +136,12 @@ const LLMTalkInterface = ({ session_id, prompt, onDone }) => {
             // Handle audio data
             const audioChunk = part.split('\r\n\r\n')[1];
             const arrayBuffer = base64ToArrayBuffer(audioChunk); //Convert base64encoded UTF-8 to an ArrayBuffer as required by webAPI for audio.      
-            await processAudioChunk(arrayBuffer);
+            await processAndQueueAudioChunk(arrayBuffer);
         } else if (part.includes('Content-Type: application/json')) {
             // Handle viseme data.
             const metadataJSON = part.split('\r\n\r\n')[1];
-            console.log(metadataJSON);
+            processAndQueueJsonData(metadataJSON)
+            //console.log(metadataJSON);
         }
     }
 
@@ -142,7 +172,7 @@ const LLMTalkInterface = ({ session_id, prompt, onDone }) => {
                   sourceToPlay.current.stop();
                   response = interrupt();
                   response = await sendPrompt('Sorry, can you say that again.', ActionEndPoint.SAY);
-                  sourceQueue.current = [];
+                  audioSourceQueue.current = [];
                 }
 
                 const reader = response.body.getReader();  //response.body exposes a ReadableStream
@@ -163,6 +193,10 @@ const LLMTalkInterface = ({ session_id, prompt, onDone }) => {
                         human readable strings and the audio encoded as base64 UTF-8. Its possible that 
                         the audio data is split into several 'sub-chunks' so they must be reassembled into 
                         the complete chunk before playing.
+
+                        The Yak backend uses fastAPI StreamingResponse class to send multipartresponse data 
+                        that uses 'frame' (set in boundary variable here) as a boundary marker. The 'frame' marks
+                        the beginning of each part (audio or json) and NOT the tuple of parts. 
                     */
                     const chunk = new TextDecoder().decode(value); 
                     currentData += chunk;
@@ -173,9 +207,10 @@ const LLMTalkInterface = ({ session_id, prompt, onDone }) => {
                         if (start_index>=0){
                             const end_index = currentData.indexOf(`--${boundary}`, start_index+1);
                             if (end_index>=0){
-                                // The we have a pair of boundary markers so we can process the content
+                                // The we have a pair of boundary markers so we can process the multi-part content
                                 const part = currentData.slice(start_index,end_index);                      
                                 // Process each part (audio or metadata)
+                                debugger;
                                 await processContent(part);
                                 currentData= currentData.slice(end_index); //Drop the prcessed data.
                             } else {

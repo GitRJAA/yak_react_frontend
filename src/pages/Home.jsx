@@ -1,9 +1,14 @@
-import YakAvatar from "../components/YakAvatar/YakAvatar";
+import Experience from "../components/YakAvatar/Experience";
+import { ChatProvider } from "../components/YakAvatar/hooks/useChat.jsx";
+import { Canvas } from "@react-three/fiber";
+
+
+import { Loader } from "@react-three/drei";
+
 import WebRTCSTT from "../components/WebRTCSTT/WebRTCSTT"
 import MenuIDSelector from "../components/MenuIDSelector/MenuIDSelector";
 import StreamingTextCanvas from "../components/StreamingTextCanvas/StreamingTextCanvas";
 
-import LLMInterface from "../components/LLMInterface/LLMInterface";
 import LLMTalkInterface from "../components/LLMTalkInterface/LLMTalkInterface";
 
 import { createAgentSession } from "../api/services/AppStartup.js";
@@ -17,6 +22,7 @@ import { getLastResponse } from "../api/services/Utilities";
 import { NULL_MENU } from "../data/GlobalConstants.jsx";
 
 import './allpages.css'
+import '../components/YakAvatar/YakAvatar.css'
 
 const Home = () => {
 
@@ -129,8 +135,13 @@ const Home = () => {
         {/* <LLMInterface session_id = {sessionID} prompt={convertedSpeechText} onChunkAvailable={handleConvertedSpeech}  onDone={handleAudioStreamDone} /> */}
 
         <LLMTalkInterface session_id={sessionID} prompt={convertedSpeechText} onDone={handleAudioStreamDone} />
-        <div className="avatar-panel" >
-            <YakAvatar icon={avatarIcon} />
+        <div className="yak-avatar" >
+            <ChatProvider>
+                <Loader />
+                <Canvas shadows className='avatar-canvas' camera={{ position: [0, 0, 2], fov: 20 }}>
+                    <Experience />
+                </Canvas>
+            </ChatProvider>
         </div>
         <StreamingTextCanvas text = {responseText} height="10" label="me"/>
     </div>
