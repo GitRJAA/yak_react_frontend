@@ -93,29 +93,28 @@ const facialExpressions = {
 
 const azure_to_aculus_viseme_map = 
   ["viseme_sil", //0
-  "viseme_PP",
-  "viseme_FF",
-  "viseme_TH",
-  "viseme_DD",
-  "viseme_kk",  //5
-  "viseme_CH",
-  "viseme_SS",
-  "viseme_nn",
-  "viseme_RR",
-  "viseme_aa", //10
-  "viseme_E",
-  "viseme_I",
+  "viseme_aa",
+  "viseme_aa",
   "viseme_O",
-  "viseme_O",  //14
-  "viseme_PP",
-  "viseme_FF",
+  "viseme_E",
+  "viseme_I", //5
+  "viseme_I",
+  "viseme_U",
+  "viseme_O",
+  "viseme_aa",
+  "viseme_O", //10
+  "viseme_aa",
+  "viseme_RR",
+  "viseme_RR",
+  "viseme_nn",
+  "viseme_SS", //15
+  "viseme_CH",
   "viseme_TH",
+  "viseme_FF",
   "viseme_DD",
-  "viseme_kk",  
-  "viseme_CH", //20
-  "viseme_PP",
-  "viseme_FF"
-  ]
+  "viseme_kk", //21
+  "viseme_PP"]
+  
 
 let setupMode = false;
 
@@ -239,7 +238,7 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
           currentAudioTime <= mouthCue.end
         ) {
           appliedMorphTargets.push(azure_to_aculus_viseme_map[mouthCue.value]);
-          lerpMorphTarget(azure_to_aculus_viseme_map[mouthCue.value], 1, 0.2);
+          lerpMorphTarget(azure_to_aculus_viseme_map[mouthCue.value], 1, 0.25);
           break;
         }
       }
