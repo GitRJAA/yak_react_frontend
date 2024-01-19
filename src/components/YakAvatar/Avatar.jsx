@@ -91,18 +91,6 @@ const facialExpressions = {
   },
 };
 
-/* const corresponding = {
-  A: "viseme_PP",
-  B: "viseme_kk",
-  C: "viseme_I",
-  D: "viseme_AA",
-  E: "viseme_O",
-  F: "viseme_U",
-  G: "viseme_FF",
-  H: "viseme_TH",
-  X: "viseme_PP",
-}; */
-
 const azure_to_aculus_viseme_map = 
   ["viseme_sil", //0
   "viseme_PP",
@@ -131,39 +119,66 @@ const azure_to_aculus_viseme_map =
 
 let setupMode = false;
 
-export function Avatar(props) {
+export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
+
+  //Avatar definition and animations.
   const { nodes, materials, scene } = useGLTF(
     "/models/64f1a714fe61576b46f27ca2.glb"
-    //"/models/65a5f507e084b249a0ef9344.glb"
+  );
+  const { animations } = useGLTF(
+    "/models/animations.glb"
   );
 
-  const { message, onMessagePlayed, chat } = useChat();
 
-  const [lipsync, setLipsync] = useState();
+  // used to hold the tuple of (audio source, visemes data)
+  const dataTuple = useRef([]); 
 
-  useEffect(() => {
-    console.log(message);
-    if (!message) {
-      setAnimation("Idle");
-      return;
-    }
-    setAnimation(message.animation);
-    setFacialExpression(message.facialExpression);
-    setLipsync(message.lipsync);
-    const audio = new Audio("data:audio/mp3;base64," + message.audio);
-    audio.play();
-    setAudio(audio);
-    audio.onended = onMessagePlayed;
-  }, [message]);
-
-  //const { animations } = useGLTF("/models/animations.glb");
-  const { animations } = useGLTF("/models/animations.glb");
-
+  // Time since the audioContext started. The audioContext is only started once but it plays many chunks each of which marks time starting at zero. 
+  // Use audioChunkOffset to zero audioContext playback time used within the viseme events for each chunk of audio.
+  const audioChunkOffset = useRef(0); 
+  
   const group = useRef();
   const { actions, mixer } = useAnimations(animations, group);
   const [animation, setAnimation] = useState(
     animations.find((a) => a.name === "Idle") ? "Idle" : animations[0].name // Check if Idle animation exists otherwise use first animation
   );
+
+  // This hook starts and stops playing the audio according to 
+  // the queueHasData prop passed from the LLMTalkInterface
+  useEffect(() => {
+    console.log('recieved audio data');
+    //TODO make it possible to pass in an animation.
+    if (!queueHasData){
+          setAnimation("Idle");
+          if (dataTuple.current.length!==0){
+            // interrupt audio if something is playing.
+            try {
+              dataTuple.current.stop();
+            } catch (error) {
+              console.log('Stopping audio')
+            }
+            dataTuple.current = []; 
+          }
+          return;
+    } else {
+      playAudioChunk();
+    }
+  },[queueHasData]);
+
+  const playAudioChunk = async () => {
+    console.log('fetching data')
+    dataTuple.current = await onFetchData(); // get the data (audio, json) from the queue higher in the heirarchy.
+    if (dataTuple.current && dataTuple.current.length===2){
+      dataTuple.current[0].onended = () => {
+        playAudioChunk(); // keep fetching audio until exhausted
+    };
+      dataTuple.current[1]=JSON.parse(dataTuple.current[1])
+        dataTuple.current[0].start(0); // start audio
+        audioChunkOffset.current = audioContext.current.currentTime;
+    }
+  }
+
+  // Smoothly transition into any animation that is passed in.
   useEffect(() => {
     actions[animation]
       .reset()
@@ -172,6 +187,8 @@ export function Avatar(props) {
     return () => actions[animation].fadeOut(0.5);
   }, [animation]);
 
+
+  // Lineraly interpolation the change in the state (value) of a morph target
   const lerpMorphTarget = (target, value, speed = 0.1) => {
     scene.traverse((child) => {
       if (child.isSkinnedMesh && child.morphTargetDictionary) {
@@ -192,10 +209,7 @@ export function Avatar(props) {
   };
 
   const [blink, setBlink] = useState(false);
-  const [winkLeft, setWinkLeft] = useState(false);
-  const [winkRight, setWinkRight] = useState(false);
   const [facialExpression, setFacialExpression] = useState("");
-  const [audio, setAudio] = useState();
 
   useFrame(() => {
     !setupMode &&
@@ -211,19 +225,15 @@ export function Avatar(props) {
         }
       });
 
-    lerpMorphTarget("eyeBlinkLeft", blink || winkLeft ? 1 : 0, 0.5);
-    lerpMorphTarget("eyeBlinkRight", blink || winkRight ? 1 : 0, 0.5);
+    lerpMorphTarget("eyeBlinkLeft", blink  ? 1 : 0, 0.5);
+    lerpMorphTarget("eyeBlinkRight", blink  ? 1 : 0, 0.5);
 
     // LIPSYNC
-    if (setupMode) {
-      return;
-    }
-
     const appliedMorphTargets = [];
-    if (message && lipsync) {
-      const currentAudioTime = audio.currentTime;
-      for (let i = 0; i < lipsync.mouthCues.length; i++) {
-        const mouthCue = lipsync.mouthCues[i];
+    if (dataTuple.current.length===2){
+      const currentAudioTime = audioContext.current.currentTime-audioChunkOffset.current; //time in seconds. Zero'd to the start of current audioChunk.
+      for (let i = 0; i < dataTuple.current[1].length; i++) {
+        const mouthCue = dataTuple.current[1][i];
         if (
           currentAudioTime >= mouthCue.start &&
           currentAudioTime <= mouthCue.end
@@ -235,6 +245,7 @@ export function Avatar(props) {
       }
     }
 
+    // Reset the values of the morphTargets not active during this period.
     Object.values(azure_to_aculus_viseme_map).forEach((value) => {
       if (appliedMorphTargets.includes(value)) {
         return;
@@ -243,6 +254,7 @@ export function Avatar(props) {
     });
   });
 
+  // Periodically blink.
   useEffect(() => {
     let blinkTimeout;
     const nextBlink = () => {
@@ -258,6 +270,7 @@ export function Avatar(props) {
     return () => clearTimeout(blinkTimeout);
   }, []);
 
+  // Model component
   return (
     <group {...props} dispose={null} ref={group}>
       <primitive object={nodes.Hips} />

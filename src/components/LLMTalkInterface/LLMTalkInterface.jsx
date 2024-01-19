@@ -10,7 +10,11 @@ class ApiUserMessage(BaseModel):
     user_id: Optional[str]
 */
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import Experience from '../YakAvatar/Experience';
+import { ChatProvider } from "../YakAvatar/hooks/useChat.jsx";
+import { Canvas } from "@react-three/fiber";
+
 
 const LLMTalkInterface = ({ session_id, prompt, onDone }) => {
 
@@ -29,9 +33,7 @@ const LLMTalkInterface = ({ session_id, prompt, onDone }) => {
     const audioSourceQueue = useRef([]);   
     const jsonDataQueue = useRef([]);    
 
-    const isStreamPlaying = useRef(false); // Flag indicating if audio is being played or not.
-    const sourceToPlay = useRef(null); //current buffer being played.
-    const jsonToPlay = useRef(null); // current viseme data.
+    const [queueHasData, setQueueHasData] = useState(false); // use to trigger rendering of the avatar component.
 
     const sendPrompt = async ( processed_prompt, mode ) => {
         let response = await fetch(`${process.env.REACT_APP_LLM_ENDPOINT}/${mode}`,{
@@ -61,18 +63,17 @@ const LLMTalkInterface = ({ session_id, prompt, onDone }) => {
         if (audioContext) {
             try {            
                 //const id = Math.floor(Math.random() * 1000000);
-                //console.log(`START ${id}: chunk buffer size ${chunk.byteLength}`)
                 const buffer = await audioContext.current.decodeAudioData(chunk);
                 const source = audioContext.current.createBufferSource();
                 source.buffer = buffer;
                 source.connect(audioContext.current.destination);
 
                 // Add source to queue so its played in the correct sequence.
-                //console.log(`FINISH ${id}: push to queue chunk buffer size ${chunk.byteLength}`)
                 audioSourceQueue.current.push(source);
-
-                if (!isStreamPlaying.current) { 
-                    playNextChunk();
+                console.log('audio pushed to queue')
+                if (!queueHasData) {
+                    setQueueHasData(true);
+                    console.log('status of queue changed.')
                 }
             }
             catch (err){
@@ -89,9 +90,6 @@ const LLMTalkInterface = ({ session_id, prompt, onDone }) => {
         //        the viseme source. These events may need to be mapped to those used by the avatar model.
         
         jsonDataQueue.current.push(data);
-        if (!isStreamPlaying.current) { 
-            playNextChunk();
-        }
     }
     
     const processVisemeData = (viseme_list) => {
@@ -102,22 +100,6 @@ const LLMTalkInterface = ({ session_id, prompt, onDone }) => {
         return viseme_list
     }
 
-    const playNextChunk = () => {
-        // Play an audio source but only if there is viseme data to go with it. 
-        if ((audioSourceQueue.current.length > 0) && (jsonDataQueue.current.length>0)) {
-            sourceToPlay.current = audioSourceQueue.current.shift();
-            jsonToPlay.current = processVisemeData(jsonDataQueue.current.shift());
-            sourceToPlay.current.start(0);
-            sourceToPlay.current.onended = () => {
-                playNextChunk();
-            };
-            isStreamPlaying.current = true;
-        } else {
-            isStreamPlaying.current = false;
-            onDone(); 
-        }
-    };
- 
     const base64ToArrayBuffer = (base64) => {
         // Helper function to convert base64 utf-8 string to ArrayBuffer of audio bytes.
         // TODO - not optimal for large base64 strings.
@@ -139,7 +121,7 @@ const LLMTalkInterface = ({ session_id, prompt, onDone }) => {
             await processAndQueueAudioChunk(arrayBuffer);
         } else if (part.includes('Content-Type: application/json')) {
             // Handle viseme data.
-            const metadataJSON = part.split('\r\n\r\n')[1];
+            const metadataJSON = part.split('\r\n\r\n')[1].replace(/\r?\n.*$/,'');
             processAndQueueJsonData(metadataJSON)
             //console.log(metadataJSON);
         }
@@ -150,6 +132,19 @@ const LLMTalkInterface = ({ session_id, prompt, onDone }) => {
         // It does not clear the audio queue.
         const response =  fetch(`${process.env.REACT_APP_LLM_ENDPOINT}/agent/interrupt/${session_id}`);
         return response
+    }
+
+    const cbPopQueueData = async () => {
+        //Callback to get the next chunk of data for the audio/json data queues for consumption in the avatar
+        //@ret: tuple( audio data, json data)
+        
+        if ((audioSourceQueue.current.length>0) && (jsonDataQueue.current.length>0)){
+            return [audioSourceQueue.current.shift(),processVisemeData(jsonDataQueue.current.shift())];    
+        } else {
+            setQueueHasData(false); // Set avatar to idle model and cleanup audio.
+            onDone(); // Fire the onDone callack from parent.
+            return [];
+        }
     }
 
     useEffect(() => {
@@ -164,15 +159,16 @@ const LLMTalkInterface = ({ session_id, prompt, onDone }) => {
             const fetchData = async () => {
                 let response = null;
 
-                if (!isStreamPlaying.current){
+                if (!queueHasData){
                   response = await sendPrompt(prompt, ActionEndPoint.AVATAR); //Streams audio and meta-data back.
                 } else {
                   //Allow yak to be interrupted while its speaking.
-                  isStreamPlaying.current = false;
-                  sourceToPlay.current.stop();
-                  response = interrupt();
+                  setQueueHasData(false); // stop the talkinterface 
+                  response = await interrupt();  // Signal to stop sending data. 
                   response = await sendPrompt('Sorry, can you say that again.', ActionEndPoint.SAY);
-                  audioSourceQueue.current = [];
+                  audioSourceQueue.current = []; //flush the audio queue
+                  jsonDataQueue.current = []; //flush the jsondata queue (visemes)
+                  onDone();
                 }
 
                 const reader = response.body.getReader();  //response.body exposes a ReadableStream
@@ -210,7 +206,7 @@ const LLMTalkInterface = ({ session_id, prompt, onDone }) => {
                                 // The we have a pair of boundary markers so we can process the multi-part content
                                 const part = currentData.slice(start_index,end_index);                      
                                 // Process each part (audio or metadata)
-                                debugger;
+                                //debugger;
                                 await processContent(part);
                                 currentData= currentData.slice(end_index); //Drop the prcessed data.
                             } else {
@@ -225,6 +221,16 @@ const LLMTalkInterface = ({ session_id, prompt, onDone }) => {
             fetchData();
         }
     }, [prompt]);
+
+    return (
+    <div className="yak-avatar" >
+        <ChatProvider>
+            <Canvas shadows className='avatar-canvas' camera={{ position: [0, 0, 2], fov: 20 }}>
+                <Experience onFetchData = {cbPopQueueData} queueHasData = {queueHasData} audioContext = {audioContext} />
+            </Canvas>
+        </ChatProvider>
+        </div> 
+    );
 
 }
 

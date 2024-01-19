@@ -8,11 +8,12 @@ import { useEffect, useRef } from "react";
 import { useChat } from "./hooks/useChat";
 import { Avatar } from "./Avatar";
 
-const Experience = () => {
+const Experience = ({onFetchData, queueHasData, audioContext}) => {
   const cameraControls = useRef();
   const { cameraZoomed } = useChat();
 
   useEffect(() => {
+    console.log('rendered experience')
     cameraControls.current.setLookAt(0, 2, 5, 0, 1.5, 0);
   }, []);
 
@@ -27,7 +28,7 @@ const Experience = () => {
     <>
         <CameraControls ref={cameraControls} />
         <Environment preset="sunset" />
-          <Avatar />
+          <Avatar onFetchData={onFetchData} queueHasData = {queueHasData} audioContext = {audioContext} />
         <ContactShadows opacity={0.7} />
     </>
   );
