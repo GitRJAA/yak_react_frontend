@@ -11,9 +11,11 @@ class ApiUserMessage(BaseModel):
 */
 
 import { useEffect, useRef, useState } from 'react'
-import Experience from '../YakAvatar/Experience';
-import { ChatProvider } from "../YakAvatar/hooks/useChat.jsx";
-import { Canvas } from "@react-three/fiber";
+import Experience from './Experience.jsx';
+import { ChatProvider } from "./hooks/useChat.jsx";
+
+import TransparentCanvas from '../Misc/TransparentCanvas.jsx';
+import PassThroughVRBackground from "./PassThroughVRBackground.jsx";
 
 
 const LLMTalkInterface = ({ session_id, prompt, onDone }) => {
@@ -223,11 +225,12 @@ const LLMTalkInterface = ({ session_id, prompt, onDone }) => {
     }, [prompt]);
 
     return (
-    <div className="yak-avatar" >
+    <div className="yak-avatar-container" style={{position: 'relative'}} >
         <ChatProvider>
-            <Canvas shadows className='avatar-canvas' camera={{ position: [0, 0, 2], fov: 20 }}>
-                <Experience onFetchData = {cbPopQueueData} queueHasData = {queueHasData} audioContext = {audioContext} />
-            </Canvas>
+            <PassThroughVRBackground />
+                <TransparentCanvas shadows className='avatar-canvas' style={{position: 'absolute', top:0, left:0 }} camera={{ position: [0, 0, 2], fov: 20 }}>
+                    <Experience onFetchData = {cbPopQueueData} queueHasData = {queueHasData} audioContext = {audioContext} />
+                </TransparentCanvas>
         </ChatProvider>
         </div> 
     );

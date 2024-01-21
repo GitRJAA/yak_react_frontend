@@ -13,3 +13,8 @@
 .working_area {
     width: 80%
 }
+
+.margin5topbottom {
+    margin-top: 5px;
+    margin-bottom: 5px;
+}

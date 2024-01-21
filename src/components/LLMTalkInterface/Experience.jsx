@@ -7,6 +7,8 @@ import {
 import { useEffect, useRef } from "react";
 import { useChat } from "./hooks/useChat";
 import { Avatar } from "./Avatar";
+import PassThroughVRBackground from "./PassThroughVRBackground";
+
 
 const Experience = ({onFetchData, queueHasData, audioContext}) => {
   const cameraControls = useRef();
@@ -28,7 +30,7 @@ const Experience = ({onFetchData, queueHasData, audioContext}) => {
     <>
         <CameraControls ref={cameraControls} />
         <Environment preset="sunset" />
-          <Avatar onFetchData={onFetchData} queueHasData = {queueHasData} audioContext = {audioContext} />
+        <Avatar onFetchData={onFetchData} queueHasData = {queueHasData} audioContext = {audioContext} />
         <ContactShadows opacity={0.7} />
     </>
   );

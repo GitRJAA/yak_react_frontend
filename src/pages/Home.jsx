@@ -9,6 +9,7 @@ import StreamingTextCanvas from "../components/StreamingTextCanvas/StreamingText
 
 import LLMTalkInterface from "../components/LLMTalkInterface/LLMTalkInterface";
 
+
 import { createAgentSession } from "../api/services/AppStartup.js";
 
 import { useState, useContext, useRef } from "react";
@@ -20,7 +21,7 @@ import { getLastResponse } from "../api/services/Utilities";
 import { NULL_MENU } from "../data/GlobalConstants.jsx";
 
 import './allpages.css'
-import '../components/YakAvatar/YakAvatar.css'
+import '../components/LLMTalkInterface/YakAvatar.css'
 
 const Home = () => {
 
@@ -131,8 +132,9 @@ const Home = () => {
 
         <StreamingTextCanvas text={streamingConvertedText} height="2" label="you"/>
         {/* <LLMInterface session_id = {sessionID} prompt={convertedSpeechText} onChunkAvailable={handleConvertedSpeech}  onDone={handleAudioStreamDone} /> */}
-
-        <LLMTalkInterface session_id={sessionID} prompt={convertedSpeechText} onDone={handleAudioStreamDone} />
+        <div className='avatar-passthrough-container margin5topbottom'>
+            <LLMTalkInterface session_id={sessionID} prompt={convertedSpeechText} onDone={handleAudioStreamDone} />
+        </div>
 
         <StreamingTextCanvas text = {responseText} height="10" label="me"/>
     </div>
