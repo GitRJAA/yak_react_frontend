@@ -5,7 +5,7 @@ import { Loader } from "@react-three/drei";
 
 import WebRTCSTT from "../components/WebRTCSTT/WebRTCSTT"
 import MenuIDSelector from "../components/MenuIDSelector/MenuIDSelector";
-import StreamingTextCanvas from "../components/StreamingTextCanvas/StreamingTextCanvas";
+import StreamingTextCanvas from "../components/Canvas/StreamingTextCanvas.jsx";
 
 import LLMTalkInterface from "../components/LLMTalkInterface/LLMTalkInterface";
 

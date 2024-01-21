@@ -91,6 +91,7 @@ const facialExpressions = {
   },
 };
 
+//Azure to Oculus viseme (best endevours) mapping
 const azure_to_aculus_viseme_map = 
   ["viseme_sil", //0
   "viseme_aa",

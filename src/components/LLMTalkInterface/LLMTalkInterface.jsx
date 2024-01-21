@@ -14,7 +14,7 @@ import { useEffect, useRef, useState } from 'react'
 import Experience from './Experience.jsx';
 import { ChatProvider } from "./hooks/useChat.jsx";
 
-import TransparentCanvas from '../Misc/TransparentCanvas.jsx';
+import TransparentCanvas from '../Canvas/TransparentCanvas.jsx';
 import PassThroughVRBackground from "./PassThroughVRBackground.jsx";
 
 
