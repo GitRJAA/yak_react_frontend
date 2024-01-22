@@ -18,7 +18,7 @@ import TransparentCanvas from '../Canvas/TransparentCanvas.jsx';
 import PassThroughVRBackground from "./PassThroughVRBackground.jsx";
 
 
-const LLMTalkInterface = ({ session_id, prompt, onDone }) => {
+const LLMTalkInterface = ({ session_id, prompt, onToggleFullscreen, isFullscreen, onDone }) => {
 
     // constants for action endpoints.
     const ActionEndPoint = { 
@@ -225,9 +225,9 @@ const LLMTalkInterface = ({ session_id, prompt, onDone }) => {
     }, [prompt]);
 
     return (
-    <div className="yak-avatar-container" style={{position: 'relative'}} >
+    <div className={`${isFullscreen ? 'avatar-full-screen':'yak-avatar-container'}`}>
         <ChatProvider>
-            <PassThroughVRBackground />
+               <PassThroughVRBackground onToggleFullscreen={ onToggleFullscreen} isFullscreen={isFullscreen} />
                 <TransparentCanvas shadows className='avatar-canvas' style={{position: 'absolute', top:0, left:0 }} camera={{ position: [0, 0, 2], fov: 20 }}>
                     <Experience onFetchData = {cbPopQueueData} queueHasData = {queueHasData} audioContext = {audioContext} />
                 </TransparentCanvas>

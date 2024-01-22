@@ -4,10 +4,10 @@ import InputAdornment from '@mui/material/InputAdornment';
 import KeyboardVoiceIcon from '@mui/icons-material/KeyboardVoice';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 
-const StreamingTextCanvas = ({text, height, label}) => {
+const StreamingTextCanvas = ({text, height, label, zIndex }) => {
     
     return (
-            <div style={{width: '80%'}}>
+            <div className="margin-top-8" style={{width: '80%', zIndex: zIndex}}>
                 <TextField
                 multiline
                 fullWidth
