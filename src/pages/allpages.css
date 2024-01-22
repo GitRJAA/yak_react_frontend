@@ -24,6 +24,10 @@
     margin-top: 8px;
 }
 
+.margin-all-2 {
+    margin: 2px;
+}
+
 .fullscreen {
   position: fixed;
 }

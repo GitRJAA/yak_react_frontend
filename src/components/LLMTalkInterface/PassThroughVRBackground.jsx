@@ -9,6 +9,7 @@ import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
 import '../MenuComponents/CameraCapture.css'
 import './YakAvatar.css'
 
+
 const PassThroughVRBackground = ({onToggleFullscreen, isFullscreen}) => {
     const [stream, setStream] = useState(null);
     const videoRef = useRef(null);
@@ -119,7 +120,7 @@ const PassThroughVRBackground = ({onToggleFullscreen, isFullscreen}) => {
             <>
               <video ref={videoRef} autoPlay playsInline className="avatar-passthrough-video"></video>
                 <div className="avatar-passthrough-controls">
-                    <IconButton color="light-gray" aria-label="switch camera" component="span" onClick={handleCameraSwitch} sx = {{ 
+                    <IconButton className='margin-all-2' color="light-gray" aria-label="switch camera" component="span" onClick={handleCameraSwitch} sx = {{ 
                         backgroundColor: '#FFFFFF', 
                         '&:hover':{
                             backgroundColor: 'lightgray'
@@ -127,7 +128,7 @@ const PassThroughVRBackground = ({onToggleFullscreen, isFullscreen}) => {
                         }}>
                         <FlipCameraIosIcon fontSize='large'   />
                     </IconButton>
-                    <IconButton color="light-gray" aria-label="zoom in" component="span" onClick={handleZoomIn} sx = {{ 
+                    <IconButton className='margin-all-2' color="light-gray" aria-label="zoom in" component="span" onClick={handleZoomIn} sx = {{ 
                         backgroundColor: '#FFFFFF', 
                         '&:hover':{
                             backgroundColor: 'lightgray'
@@ -135,7 +136,7 @@ const PassThroughVRBackground = ({onToggleFullscreen, isFullscreen}) => {
                         }}>
                         <ZoomInIcon fontSize='large'   />
                     </IconButton>
-                    <IconButton color="light-gray" aria-label="zoom out" component="span" onClick={handleZoomOut} sx = {{ 
+                    <IconButton className='margin-all-2' color="light-gray" aria-label="zoom out" component="span" onClick={handleZoomOut} sx = {{ 
                         backgroundColor: '#FFFFFF', 
                         '&:hover':{
                             backgroundColor: 'lightgray'
@@ -143,7 +144,7 @@ const PassThroughVRBackground = ({onToggleFullscreen, isFullscreen}) => {
                         }}>
                         <ZoomOutIcon fontSize='large'   />
                     </IconButton>
-                    <IconButton color="light-gray" aria-label="screen mode" component="span" onClick={handleToggleFullscreen} sx = {{ 
+                    <IconButton className='margin-all-2' color="light-gray" aria-label="screen mode" component="span" onClick={handleToggleFullscreen} sx = {{ 
                         backgroundColor: '#FFFFFF', 
                         '&:hover':{
                             backgroundColor: 'lightgray'

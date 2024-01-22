@@ -1,7 +1,5 @@
-
-
-
 import { Loader } from "@react-three/drei";
+import { Suspense } from "react";
 
 import WebRTCSTT from "../components/WebRTCSTT/WebRTCSTT"
 import MenuIDSelector from "../components/MenuIDSelector/MenuIDSelector";
@@ -123,25 +121,27 @@ const Home = () => {
 
     return (
     <div className="home allpages">
-        <div className={`${isFullScreen ? 'hidden-menu-controls': 'menu-controls'}`}>
-            <WebRTCSTT onSpeechConverted = {handleConvertedSpeech} 
-                        onConversionDone = {handleConversionDone}
-                        onRecorderStatusChange = {handleRecorderStatusChange} 
-                        token = {tempSttToken}
-                        autoStart = {autoStart.current} />
-            <MenuIDSelector onSelectedMenuID = {handleMenuSelectionChanged} defaultMenuID = {override_menu_id} />
-        </div>
-
-        <StreamingTextCanvas className='margin-top-8' text={streamingConvertedText} height="2" label="you" zIndex='1005'/>
-        {/* <LLMInterface session_id = {sessionID} prompt={convertedSpeechText} onChunkAvailable={handleConvertedSpeech}  onDone={handleAudioStreamDone} /> */}
-        <div className={`${isFullScreen ? 'avatar-full-screen' :'avatar-passthrough-container margin5topbottom'}`}>
-            <LLMTalkInterface session_id={sessionID} 
-                            prompt={convertedSpeechText} 
-                            onToggleFullscreen={toggleFullScreen} 
-                            isFullscreen={isFullScreen} 
-                            onDone={handleAudioStreamDone} />
-        </div>
-        <StreamingTextCanvas text = {responseText} height="10" label="me" zIndex='0'/>
+        <Loader />
+        <Suspense>
+            <div className={`${isFullScreen ? 'hidden-menu-controls': 'menu-controls'}`}>
+                <WebRTCSTT onSpeechConverted = {handleConvertedSpeech} 
+                            onConversionDone = {handleConversionDone}
+                            onRecorderStatusChange = {handleRecorderStatusChange} 
+                            token = {tempSttToken}
+                            autoStart = {autoStart.current} />
+                <MenuIDSelector onSelectedMenuID = {handleMenuSelectionChanged} defaultMenuID = {override_menu_id} />
+            </div>
+            <StreamingTextCanvas text={streamingConvertedText} height="2" label="you" zIndex='1005'/>
+            {/* <LLMInterface session_id = {sessionID} prompt={convertedSpeechText} onChunkAvailable={handleConvertedSpeech}  onDone={handleAudioStreamDone} /> */}
+            <div className={`${isFullScreen ? 'avatar-full-screen' :'avatar-passthrough-container margin5topbottom'}`}>
+                <LLMTalkInterface session_id={sessionID} 
+                                prompt={convertedSpeechText} 
+                                onToggleFullscreen={toggleFullScreen} 
+                                isFullscreen={isFullScreen} 
+                                onDone={handleAudioStreamDone} />
+            </div>
+            <StreamingTextCanvas text = {responseText} height="10" label="me" zIndex='0'/>
+        </Suspense>
     </div>
     )
 }
