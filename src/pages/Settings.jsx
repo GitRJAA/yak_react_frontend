@@ -193,15 +193,17 @@ const fetchSettings = async () => {
               }
                 if (key === 'menus'){
                   converted_settings[key]=JSON.parse(converted_settings[key])
-                }
+                } 
             }
         }
     return JSON.stringify(converted_settings);
     }
 
   const handleSave = async () => {
+    debugger;
     setpopupContext(popup_saving_settings);
     try {
+      debugger;
         const converted_settings = validateAndPrepareSettings();
         if (!converted_settings) {
             return null;

@@ -78,8 +78,7 @@ const PassThroughVRBackground = ({onToggleFullscreen, isFullscreen}) => {
         await updateCameraZoom();
       };
   
-    const updateCameraZoom = async () => {
-        debugger;
+    const updateCameraZoom = async () => {        
         if (videoRef.current && videoRef.current.srcObject) {
           const stream = videoRef.current.srcObject;
           const tracks = stream.getVideoTracks();
@@ -111,14 +110,13 @@ const PassThroughVRBackground = ({onToggleFullscreen, isFullscreen}) => {
     }, []);
 
     const handleToggleFullscreen = async ()=>{
-        debugger;
         onToggleFullscreen();
     }
-
 
     return (      
             <>
               <video ref={videoRef} autoPlay playsInline className="avatar-passthrough-video"></video>
+              
                 <div className="avatar-passthrough-controls">
                     <IconButton className='margin-all-2' color="light-gray" aria-label="switch camera" component="span" onClick={handleCameraSwitch} sx = {{ 
                         backgroundColor: '#FFFFFF', 

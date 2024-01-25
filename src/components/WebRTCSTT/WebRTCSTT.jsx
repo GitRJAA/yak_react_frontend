@@ -1,4 +1,6 @@
 import { useState, useEffect, useContext, useRef } from 'react';
+import { useAvatarContext } from '../LLMTalkInterface/hooks/useAvatar';
+
 import useWebSocket, {ReadyState} from 'react-use-websocket';
 import RecordRTC, { StereoAudioRecorder } from "recordrtc";
 import { AppContext } from "../../api/services/AppContext";
@@ -10,7 +12,6 @@ const WebRTCSTT = ({ onSpeechConverted, onConversionDone, onRecorderStatusChange
   /*
     This component handles the webRTC connection with the speech-to-text provider Asemebly AI. It has not been tested with other providers.
 
-
     onSpeechConverted: func: called everytime chunk of text becomes available
     onConversionDone: func: called when no more speech to convert. 
     onRecordingStatusChange: func: call end stop.resume buttons pressed. 
@@ -19,7 +20,6 @@ const WebRTCSTT = ({ onSpeechConverted, onConversionDone, onRecorderStatusChange
   */
 
     let texts = {};
-    //let recorder = null;
     const recorder = useRef(null)
 
     const [socketUrl, setSocketUrl] = useState('');
@@ -30,6 +30,7 @@ const WebRTCSTT = ({ onSpeechConverted, onConversionDone, onRecorderStatusChange
     const connectionStatus = useRef(null);
 
     const { tempSttToken } = useContext(AppContext);
+    const { statusEnum, getAvatarStatusNonRerender, setAvatarStatus } = useAvatarContext();
 
     useEffect(()=>{
       if (autoStart){
@@ -126,15 +127,27 @@ const WebRTCSTT = ({ onSpeechConverted, onConversionDone, onRecorderStatusChange
 
     useEffect(() => {
           if (lastMessage!==null){
-              let lastMessageJSON = JSON.parse(lastMessage.data)
-              console.log(lastMessageJSON.text)
-              onSpeechConverted(lastMessageJSON.text)
+              //console.log(`last message:${lastMessage.data}`);
+              let lastMessageJSON = JSON.parse(lastMessage.data); 
+              //console.log(`last message:${lastMessageJSON}`);
+              //Set avatar status to listening just started
+              if (lastMessageJSON.text && lastMessageJSON.text!==''){ //There are signalling messages sometimes returned so check that we have text in the message.
+                //debugger;
+                  console.log(lastMessageJSON.text);
+                  onSpeechConverted(lastMessageJSON.text);
+                  if (getAvatarStatusNonRerender()!==statusEnum.LISTENING){
+                      //debugger;
+                      setAvatarStatus(statusEnum.LISTENING);
+                  }
+              }
               if (lastMessageJSON.message_type==='FinalTranscript'){
                 let text = processTranscript(lastMessageJSON)
                 onConversionDone(text); //fire callback to send final text to parent state.
+
+                setAvatarStatus(statusEnum.IDLE);
               }
-          }
-      }, [lastMessage]);
+            }
+        }, [lastMessage]);
 
     /*
       STT Listenting controls
