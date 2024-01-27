@@ -69,3 +69,11 @@ export const format = (inputString, replacements) =>{
       counter++;
     }
 } 
+
+export const showDictionary = (myDict) => {
+  for (const key in myDict){
+    if (myDict.hasOwnProperty(key)){
+      console.log(`${key}:${myDict[key]}`);
+    }
+  }
+}

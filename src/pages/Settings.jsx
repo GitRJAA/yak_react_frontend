@@ -200,10 +200,10 @@ const fetchSettings = async () => {
     }
 
   const handleSave = async () => {
-    debugger;
+    
     setpopupContext(popup_saving_settings);
     try {
-      debugger;
+      
         const converted_settings = validateAndPrepareSettings();
         if (!converted_settings) {
             return null;

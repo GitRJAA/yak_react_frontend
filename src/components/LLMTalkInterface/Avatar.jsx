@@ -9,6 +9,7 @@ import React, { useContext, useEffect, useRef, useState } from "react";
 import { useAvatarContext } from "./hooks/useAvatar";
 import { AppContext } from "../../api/services/AppContext";
 
+
 import * as THREE from "three";
 
 //Azure to Oculus viseme (best endevours) mapping
@@ -61,13 +62,15 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
   //Avatar definition and animations.
   const { nodes, materials, scene } = useGLTF(
     //"/models/64f1a714fe61576b46f27ca2.glb"  <- Original
-    "/models/AfroMale/AfroMale.glb"
+    //"/models/AfroMale/AfroMale.glb"
+    "/models/Matt/Matt.glb"
   );
 
   const { animations } = useGLTF(
     //"/models/animations.glb"
     //"/models/AfroMale/AfroMaleAnimations.glb"
-    "/models/AfroMale/animations_v2.glb"
+    //"/models/AfroMale/animations_v2.glb"
+    "/models/Matt/MattAnimations.glb"
   );
   
    
@@ -82,7 +85,11 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
 
   const group = useRef();
   const { actions, mixer } = useAnimations(animations, group); //Animations is list type object
-  const [animation, setAnimation] = useState(animations.find((a) => a.name === "Idle") ? "Idle" : animations[0].name); // Check if Idle animation exists otherwise use first animation
+
+
+  // animation: str| Array[Array[]] depending whether its a single animation or a composite one. See createCompositeAnimation for details.
+  //const [animation, setAnimation] = useState(animations.find((a) => a.name === "Idle") ? "Idle" : animations[0].name);
+  const [animation, setAnimation] = useState("");
 
 
   /****************
@@ -159,16 +166,38 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
   ************************************************/
 
   // Smoothly transition into any animation that is passed in.
+  // animation: str|Array[Arrary[]] can be either a single or composite.
+  // If a composite, then the format of the inner Array is [animation name:str, fadeInTime:int, fadeOutTime:int]
+  //  where fadeInTime and fadeOutTime are the time in seconds relative to the start and end of the animation. 
+  // Note: All aniamtions loop infinitely.
+
   useEffect(() => {
-    console.log(`Animation state changed to ${animation}`)
-    actions[animation].setLoop(THREE.LoopOnce);
-    actions[animation]
+    if (!animation || animation === ""){
+      return;
+    }
+
+    let _animation = animation;
+ 
+    if (typeof animation === 'string'){
+      // If just the name of the animation is passed in then set defaults.
+      _animation = {'animation':animation,'fadeInTime':(mixer.stats.actions.inUse === 0 ? 0 : 0.5),"fadeOutTime":0.5,"reps":1}
+    }
+    console.log(_animation, actions[_animation['animation']].duration);
+    console.log(`Start FadeIn ${_animation['animation']} @ ${Date.now()}}`);
+    let reps = _animation['reps']===1 ? THREE.LoopOnce : THREE.LoopRepeat;
+    console.log(reps)
+
+    //actions[_animation['animation']].clampWhenFinished = true;
+    actions[_animation['animation']]
+      .setLoop(reps)
       .reset()
-      .fadeIn(mixer.stats.actions.inUse === 0 ? 0 : 0.5)
+      .fadeIn(_animation['fadeInTime'])
       .play();
     return () => {
         try {
-          actions[animation].fadeOut(0.5);
+          console.log(`Start: Fadeout ${_animation['animation']} @ ${Date.now()}}`);
+          actions[_animation['animation']].fadeOut(_animation['fadeOutTime']);
+
         }
         catch {}
       }
@@ -263,8 +292,10 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
   // Lifecycle animations such as idle routines, talking , listening etc. 
   //    A change in the avatarStatus trigger the scheduling of transitions between different animations corresponding to each phase of the status lifecycle.
   //    For example, 'Idle' should progress from still, to fidgiting, to using phone to sitting etc.
+  //
+  // Note: All animations will loop infinitely until animation state variable changes. So to reset to 'idle', idle must be scheduled.
 
-  // A list of timers that is used for unloading them when the component renders or unloads.
+  // A list of timer ids that is used for unloading them when the component renders or unloads.
   // {'id': timer id, 'expiration': time in ms (form 1970)}
   const lifecycleTimers = useRef([]);
 
@@ -277,11 +308,12 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
           setAnimation(stage['animation']);
         }, random_start
       );
-      lifecycleTimers.current.push(newTimeout);
+      lifecycleTimers.current.push({"id":newTimeout,"expiration":random_start+200});
+      cleanLifecycleTimerList();  //maintain the queue so that it doesn't cause memory leak.
     }
 
   const createRepeatTimer = (stage) => {
-      // Nested timers so that cycle repeats. Using setTimer
+      // Nested timers so that cycle repeats.
       const cycle_length = (stage.hasOwnProperty('cycle') ? stage['cycle']:600)*1000; //Required
       const random_start = () => {
         if (stage['start']===0){
@@ -315,6 +347,46 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
         }
       nextCycle();
   }  
+
+  const createCompositeAnimationTimers = (stage) => {
+  //Composite animations are specified as list of lists [[animation name:str,fadeInTimeInSeconds:int, fadeOutTimeInSeconds:int, reps: int],...]
+  // If reps === -1 , then this means loop infinitely.
+
+  //These are a sequence of animations with deterministic start times that can be dealt with as a single animation.
+    
+    const randomStart = (1+Math.random()*stage['variation'])*stage['start']*1000;
+    let fadeInStartDelta = 0; // The time at which the next animation should fade in.
+    let cummPrevAnimationDurations = 0; //
+    //Ensure that the animation is a list of lists if only a single list was passed in.
+    if (!Array.isArray(stage['animation'][0])){
+      stage['animation'] = [stage['animation']];      
+    }
+
+    for (let i=0; i< stage['animation'].length; i++){
+      if (stage['animation'][i].length<3){
+        continue;
+      }
+      if (stage['animation'].length === 3)  {
+        stage['animation'][i].push(1);
+      }
+
+      if (i>0){
+        //The current animation should cross-fade with the previous at the fade-out time before the end of the previous animation.
+        //Note duration is returned in seconds.
+        fadeInStartDelta = -stage['animation'][i][1]*1000;
+        cummPrevAnimationDurations += animations.find((a)=> a.name === stage['animation'][i-1][0]).duration*1000+fadeInStartDelta;  // get duration of previous animation in the composite animatino list
+      }
+      
+      const startTime = randomStart+cummPrevAnimationDurations;
+      console.log(`Composite: schedule ${stage['animation'][i][0]} @ ${startTime}: ${randomStart}:${cummPrevAnimationDurations}:${fadeInStartDelta}`);
+      const newSubStageTimer = setTimeout(() => {
+        setAnimation({"animation":stage['animation'][i][0],"fadeInTime":stage['animation'][i][1],"fadeOutTime":stage['animation'][i][2],"reps":stage['animation'][i][3]});
+      },startTime);
+      lifecycleTimers.current.push({'id':newSubStageTimer,"expiration":startTime+200});
+    }
+      //cleanLifecycleTimerList();  //maintain the queue so that it doesn't cause memory leak.
+  }
+
   const cleanLifecycleTimerList = () => {
     const initialQueueLength = lifecycleTimers.current.length;
     if (initialQueueLength===0){
@@ -343,15 +415,25 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
   }
  
   // Create the timers for the lifecycle stage.
+  // Lifecycle timers 
   useEffect(() => {
-    //debugger;
+    //
     if (statusToConfigNameMapping.hasOwnProperty(avatarStatus) 
           && avatarConfig.current.hasOwnProperty(statusToConfigNameMapping[avatarStatus])){
           //There is an entry in avatarConfig for the animation sequence for this avatarStatus
           // Create an array of timers.
           avatarConfig.current[statusToConfigNameMapping[avatarStatus]].forEach((stage) => {
             //check the named animation is available and if not then skip it
-            if (animations.find((a) => a.name === stage['animation'])) {
+
+            if (Array.isArray(stage['animation'])){
+              //Then its a composite animation
+              //Composite animations are specified as list of lists [["animation_name",fade in time in (s), fadeout time(s)],...]
+              //TODO check that all animations are available.
+              console.log('creating composite animation');
+              createCompositeAnimationTimers(stage);
+            } else {
+              // Else its a single animation.
+              if (animations.find((a) => a.name === stage['animation'])) {
                 if (!stage.hasOwnProperty('cycle') || stage['cycle'] <=0) {
                   console.log(`creating singleshot timer for ${stage}`);
                   createSingleShotTimer(stage);
@@ -361,7 +443,8 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
                 //createSingleShotTimer(stage);
               }
             }
-          });
+          }
+        });
     }
     return () => clearAllLifecycleTimers(); //Cleanup on change of avatarStatus
   },[avatarStatus]
@@ -455,6 +538,11 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
         morphTargetInfluences={nodes.EyeRight.morphTargetInfluences}
       />
       <skinnedMesh
+        geometry={nodes.Wolf3D_Hair.geometry}
+        material={materials.Wolf3D_Hair}
+        skeleton={nodes.Wolf3D_Hair.skeleton}
+      />
+      <skinnedMesh
         name="Wolf3D_Head"
         geometry={nodes.Wolf3D_Head.geometry}
         material={materials.Wolf3D_Skin}
@@ -469,6 +557,14 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
         skeleton={nodes.Wolf3D_Teeth.skeleton}
         morphTargetDictionary={nodes.Wolf3D_Teeth.morphTargetDictionary}
         morphTargetInfluences={nodes.Wolf3D_Teeth.morphTargetInfluences}
+      />
+      <skinnedMesh
+        name="Wolf3D_Beard"
+        geometry={nodes.Wolf3D_Beard.geometry}
+        material={materials.Wolf3D_Beard}
+        skeleton={nodes.Wolf3D_Beard.skeleton}
+        morphTargetDictionary={nodes.Wolf3D_Beard.morphTargetDictionary}
+        morphTargetInfluences={nodes.Wolf3D_Beard.morphTargetInfluences}
       />
       <skinnedMesh
         geometry={nodes.Wolf3D_Body.geometry}
@@ -497,5 +593,8 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
 /* useGLTF.preload("/models/64f1a714fe61576b46f27ca2.glb");
 useGLTF.preload("/models/animations.glb"); */
 
-useGLTF.preload("/models/AfroMale/AfroMale.glb");
-useGLTF.preload("/models/AfroMale/animations_v2.glb")
+/* useGLTF.preload("/models/AfroMale/AfroMale.glb");
+useGLTF.preload("/models/AfroMale/animations_v2.glb") */
+
+useGLTF.preload("/models/Matt/Matt.glb");
+useGLTF.preload("/models/Matt/MattAnimations.glb");
