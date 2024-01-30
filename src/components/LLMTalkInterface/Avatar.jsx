@@ -56,7 +56,8 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
   const { statusEnum } = useAvatarContext();  //Shared avatar status across components
   const { sessionID } = useContext(AppContext); 
 
-  const [avatarStatus, setAvatarStatus] = useState("");
+  const avatarStatus = useRef(null);
+  const avatarLastStatus = useRef(null);
 
   /*******************************************
     Avatar Configurations
@@ -92,8 +93,12 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
 
 
   // animation: str| Array[Array[]] depending whether its a single animation or a composite one. See createCompositeAnimation for details.
-  //const [animation, setAnimation] = useState(animations.find((a) => a.name === "Idle") ? "Idle" : animations[0].name);
-  const [animation, setAnimation] = useState("");
+  // An Idle default is provided. 
+  // Note: The animation and animationRef hiold the same value. Duplication was required for access to the current animation value inside the setInterval function
+  //       which holds a reference to the used values at the time the timer is created not when its executed. setAnimation inside the timer appears to update the the state variable correctly
+  //       TODO fix this workaround. Use ref as source of truth and convert the status an update funcition that forces the update.
+  const [animation, setAnimation] = useState({"animation":"Still","fadeIn":0.5,"fadeOut":0.5,"reps":-1 });
+  const animationRef = useRef({"animation":"Still","fadeIn":0.5,"fadeOut":0.5,"reps":-1 });
 
   /****************
   Lifecycle configurations
@@ -107,7 +112,7 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
             const data = await response.json();
             avatarConfig.current = data.payload; //Dict of configurations {animation:, start: variation, single_use}
             console.log(`Init avatarStatus: IDLE`);
-            setAvatarStatus(statusEnum.IDLE);  // Make sure that the timers are set up only after the config has been loaded.
+            avatarStatus.current = statusEnum.IDLE;  // Make sure that the timers are set up only after the config has been loaded.
             console.log('Animations available:');
             animations.forEach((a)=>{console.log(a.name)});
           }
@@ -132,9 +137,9 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
   // the queueHasData prop passed from the LLMTalkInterface
   useEffect(() => {
     if (!queueHasData){
-          if (avatarStatus===statusEnum.SPEAKING){
+          if (avatarStatus.current===statusEnum.SPEAKING){
             console.log('avatarStatus=> LISTENING; after speaking')
-            setAvatarStatus(statusEnum.LISTENING);
+            avatarStatus.current = statusEnum.LISTENING;
           }
           if (dataTuple.current.length!==0){
             // interrupt audio if something is playing.
@@ -148,7 +153,7 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
           return;
     } else {
       console.log('avatarStatus => SPEAKING; on queueHasData' );
-      setAvatarStatus(statusEnum.SPEAKING);
+      avatarStatus.current = statusEnum.SPEAKING;
       playAudioChunk();
     }
   },[queueHasData]);
@@ -170,16 +175,16 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
   ************************************************/
 
   // Smoothly transition into any animation that is passed in.
+  // WARNING: Fading in and fading out the same animation will cause the animation to glitch, temporarily resetting it to the default pose. 
+  //           For this reason, do not change animation direction. Always use the animationSetter function which ensures that this will not happen.
   // animation: str|Array[Arrary[]] can be either a single or composite.
   // If a composite, then the format of the inner Array is [animation name:str, fadeInTime:int, fadeOutTime:int]
   //  where fadeInTime and fadeOutTime are the time in seconds relative to the start and end of the animation. 
-  // Note: All aniamtions loop infinitely.
 
   useEffect(() => {
-    if (!animation || animation === ""){
+    if (!animation || animation === "" || animation === undefined || (Object.keys(animation).length === 0)){
       return;
     }
-
     let _animation = animation;
  
     if (typeof animation === 'string'){
@@ -188,7 +193,7 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
     }
     console.log(`FadeIn ${_animation['animation']} @ ${Date.now()}; ${animation['fadeOutTime']}, ${animation['fadeInTime']}`);
     let reps = _animation['reps']===1 ? THREE.LoopOnce : THREE.LoopRepeat;
-    //actions[_animation['animation']].clampWhenFinished = true;
+    actions[_animation['animation']].clampWhenFinished = true;
     actions[_animation['animation']]
       .setLoop(reps)
       .reset()
@@ -203,6 +208,16 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
       }
   }, [animation]);
 
+  const animationSetter = (newAnimation) => {
+    // Only process the animation change if the _animation['animation'] value has changed.
+    // This is required to avoid rerendering the same animation and trying to simultaneously fade it out and in which leads to stuttering. 
+    if (newAnimation){
+      if (newAnimation['animation'] !== animationRef.current['animation']){
+        animationRef.current = newAnimation;
+        setAnimation(newAnimation);
+      }
+    }
+  }
 
   // Lineraly interpolation the change in the state (value) of a morph target
   const lerpMorphTarget = (target, value, speed = 0.1) => {
@@ -307,15 +322,16 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
         const newTimeout = setTimeout(()=>{
           console.log(`Fire status change (Tag=${tag}): ${stage['status']}, start_time: ${random_start} `);
           if (stage['status']){
-            setAvatarStatus(stage['status']);
+            avatarStatus.current = stage['status'];
           } else {
             console.log(`Fire animation (Tag=${tag}): ${stage['animation']}, start_time: ${random_start} `);
-          setAnimation(stage['animation']);
+          //setAnimation(stage['animation']);
+          animationSetter(stage['animation'])
           }
         }, random_start, tag
       );
       lifecycleTimers.current.push({"id":newTimeout,"expiration":Date.now()+random_start+200});
-      //cleanLifecycleTimerList();  //maintain the queue so that it doesn't cause memory leak.
+      cleanLifecycleTimerList();  //maintain the queue so that it doesn't cause memory leak.
     }
 
   const createRepeatTimer = (stage) => {
@@ -340,7 +356,7 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
       const nextCycle = () => {
       newTimer = setTimeout(()=>{
             console.log(`Start animation ${stage['animation']} `);
-            setAnimation(stage['animation']);
+            animationSetter(stage['animation']);
               //nested timer triggers the repeat of cycle
               repeatTimer = setTimeout(() => {
                 console.log(`Call repeat animation ${animation}`);
@@ -353,6 +369,8 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
         }
       nextCycle();
   }  
+
+
 
   const createCompositeAnimationTimers = (stage) => {
   //Composite animations are specified as list of lists [[animation name:str,fadeInTimeInSeconds:int, fadeOutTimeInSeconds:int, reps: int],...]
@@ -388,22 +406,25 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
       const startTime = randomStart+cummPrevAnimationDurations;
       console.log(`Create Composite Anim. Timer (Tag =${tag}): schedule ${stage['animation'][i][0]} @ ${startTime}: ${randomStart}:${cummPrevAnimationDurations}:${fadeInStartDelta}`);
       const newSubStageTimer = setTimeout(() => {
-        console.log(`Fire : (Composite timer group key: ${tag}, setAnimation:${stage['animation'][i][0]}`)
-        setAnimation({"animation":stage['animation'][i][0],"fadeInTime":stage['animation'][i][1],"fadeOutTime":stage['animation'][i][2],"reps":stage['animation'][i][3]});
+        console.log(`Fire : (Composite timer group key: ${tag}, setAnimation:${stage['animation'][i][0]}, passedInCurrentAnimation : ${animation}`)
+        const newAnimation = {"animation":stage['animation'][i][0],"fadeInTime":stage['animation'][i][1],"fadeOutTime":stage['animation'][i][2],"reps":stage['animation'][i][3]};
+        console.log(`InsideTimer: newAnimation: ${JSON.stringify(newAnimation)}, current animationRef:${animationRef.current}`);
+        animationSetter(newAnimation);
       },startTime, tag);
       lifecycleTimers.current.push({'id':newSubStageTimer,"expiration":Date.now()+startTime+200});
       console.log(`Push timerID: ${newSubStageTimer}, expiration: ${Date.now()+startTime+200}, timerlist:${lifecycleTimers.current}`);
     }
-      //cleanLifecycleTimerList();  //maintain the queue so that it doesn't cause memory leak.
+      cleanLifecycleTimerList();  //maintain the queue so that it doesn't cause memory leak.
   }
 
   const cleanLifecycleTimerList = () => {
+    //Clear expired timers that have been used by animations.
     const initialQueueLength = lifecycleTimers.current.length;
     if (initialQueueLength===0){
       return;
     }
     let tempQueue=[];
-    //LifecycleTimers is appended to asynchronously so its possible that timers will be added while the clean up is happening. 
+    //LifecycleTimers is appended to asynchronously so its possible that new animation timers will be added while the cleanup is happening. 
     //To avoid this, we effectively freeze the queue, duplicate valid timer ids on the queue then drop the frozen section.
     lifecycleTimers.current.forEach((lifeCycleTimer) => {
       if (lifeCycleTimer['expiration']>Date.now()){
@@ -414,7 +435,9 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
     lifecycleTimers.current = lifecycleTimers.current.concat(tempQueue);
     lifecycleTimers.current.splice(0,initialQueueLength); //Mutates the object inplace!
   }
+
   const clearAllLifecycleTimers = () => {
+    // Clear all timers. Used on state change to clear any queued up animation sequences.
     if (lifecycleTimers.current){
       const initialQueueLength = lifecycleTimers.current.length;
       lifecycleTimers.current.forEach( (lifeCycleTimer) => {
@@ -423,49 +446,69 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
     lifecycleTimers.current.splice(0,initialQueueLength); //Mutates the object inplace!
     }
   }
- 
-  // Create the timers for the lifecycle stage.
-  // Lifecycle timers for scheduling sequences of animations and state changes. 
-  useEffect(() => {
-    if (statusToConfigNameMapping.hasOwnProperty(avatarStatus) 
-          && avatarConfig.current.hasOwnProperty(statusToConfigNameMapping[avatarStatus])){
-          //There is an entry in avatarConfig for the animation sequence for this avatarStatus
-          // Create an array of timers.
-          if (!Array.isArray(avatarConfig.current[statusToConfigNameMapping[avatarStatus]])){
-            avatarConfig.current[statusToConfigNameMapping[avatarStatus]] = [avatarConfig.current[statusToConfigNameMapping[avatarStatus]]];
-          }
-          avatarConfig.current[statusToConfigNameMapping[avatarStatus]].forEach((stage) => {
-            //Deal with a state change stage
-            if (stage['status']){
-              console.log(`Schedule state change`)
-              createSingleShotTimer(stage);
+
+const onStatusChange = () => {
+    // Callback to handle status change. 
+    // Responsible for co-ordinating the sequence of timers to execute the animation sequences. 
+    console.log(`onStatusChange: Unloading all timers: previous status ${avatarStatus.current}`);
+    clearAllLifecycleTimers();
+
+    if (statusToConfigNameMapping.hasOwnProperty(avatarStatus.current) 
+    && avatarConfig.current.hasOwnProperty(statusToConfigNameMapping[avatarStatus.current])){
+    // Makesure the seuqence of animations is an Array. Its permitted for just a single animation to be entered in the avatarConfiguration settings UI.
+    if (!Array.isArray(avatarConfig.current[statusToConfigNameMapping[avatarStatus.current]])){
+      avatarConfig.current[statusToConfigNameMapping[avatarStatus.current]] = [avatarConfig.current[statusToConfigNameMapping[avatarStatus.current]]];
+    }
+
+    avatarConfig.current[statusToConfigNameMapping[avatarStatus.current]].forEach((stage) => {
+      //Deal with a state change stage with the avartarStatus configuration. e.g {"idle_config":[{"state":,...}]}
+      if (stage['status']){
+        console.log(`Schedule state change`);
+        createSingleShotTimer(stage);
+      } else {
+          //Animation sequence e.g {"idle_config":[{"animation":,...}]}
+          if (Array.isArray(stage['animation'])){
+            //If the animation value is an Array then its a composite animation which is a slist of list of tuples [["animation_name",fade in time in (s), fadeout time(s), "reps": -1 (loop infinitely) or 1 (just once)],...]
+            //TODO check that all animations are available.
+            //console.log('creating composite animation');
+            createCompositeAnimationTimers(stage);
+          } else {
+            // Else its a single animation.
+            if (animations.find((a) => a.name === stage['animation'])) {
+              if (!stage.hasOwnProperty('cycle') || stage['cycle'] <=0) {
+                //console.log(`creating singleshot timer for ${stage}`);
+                createSingleShotTimer(stage);
             } else {
-              //Animation sequence
-              if (Array.isArray(stage['animation'])){
-                //Then its a composite animation
-                //Composite animations are specified as list of lists [["animation_name",fade in time in (s), fadeout time(s)],...]
-                //TODO check that all animations are available.
-                console.log('creating composite animation');
-                createCompositeAnimationTimers(stage);
-              } else {
-                // Else its a single animation.
-                if (animations.find((a) => a.name === stage['animation'])) {
-                  if (!stage.hasOwnProperty('cycle') || stage['cycle'] <=0) {
-                    console.log(`creating singleshot timer for ${stage}`);
-                    createSingleShotTimer(stage);
-                } else {
-                  console.log(`Creating repeatTimer for ${stage} `);
-                  createRepeatTimer(stage);
-                  //createSingleShotTimer(stage);
-                }
-              }
+              console.log(`Creating repeatTimer for ${stage} `);
+              createRepeatTimer(stage);
+              //createSingleShotTimer(stage);
             }
           }
-        });
+        }
+      }
     }
-    return () => {console.log(`Unloading all timers: previous status ${avatarStatus}`);clearAllLifecycleTimers();} //Cleanup on change of avatarStatus
-  },[avatarStatus]
-);
+  );
+
+  }
+};
+
+useEffect(()=>{
+  // This timer poll the status Ref object to check for changes. 
+  // This was created to avoid the re-renders that are caused by implementing the same with state objects.
+  
+  console.log('Create statusPoll timer');
+  const pollStatusTimer = setInterval(() => {
+    console.log(`check status ${avatarStatus.current}, last: ${avatarStatus.current}`);
+    if (avatarStatus.current || avatarLastStatus.current){
+      if (avatarStatus.current !== avatarLastStatus.current){
+        console.log('status change detected')
+        avatarLastStatus.current = avatarStatus.current;
+        onStatusChange();
+      }
+    }
+  }, 500);
+  return () => clearInterval(pollStatusTimer);
+},[]);
 
  
   /******************************
