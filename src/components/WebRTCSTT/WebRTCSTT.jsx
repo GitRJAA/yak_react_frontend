@@ -137,14 +137,15 @@ const WebRTCSTT = ({ onSpeechConverted, onConversionDone, onRecorderStatusChange
                   onSpeechConverted(lastMessageJSON.text);
                   if (getAvatarStatusNonRerender()!==statusEnum.LISTENING){
                       //debugger;
+                      console.log(`Set avatarStatus to ${statusEnum.LISTENING} in webrtc`)
                       setAvatarStatus(statusEnum.LISTENING);
                   }
               }
               if (lastMessageJSON.message_type==='FinalTranscript'){
                 let text = processTranscript(lastMessageJSON)
                 onConversionDone(text); //fire callback to send final text to parent state.
-
-                setAvatarStatus(statusEnum.IDLE);
+                //console.log('Set avatarStatus to IDLE in webrtc');
+                //setAvatarStatus(statusEnum.IDLE);
               }
             }
         }, [lastMessage]);

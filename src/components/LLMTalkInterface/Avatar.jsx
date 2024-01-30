@@ -52,8 +52,11 @@ const azure_to_aculus_viseme_map =
 
 export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
 
-  const { avatarStatus, statusEnum, setAvatarStatus } = useAvatarContext();  //Shared avatar status across components
+  //const { avatarStatus, statusEnum, setAvatarStatus } = useAvatarContext();  //Shared avatar status across components
+  const { statusEnum } = useAvatarContext();  //Shared avatar status across components
   const { sessionID } = useContext(AppContext); 
+
+  const [avatarStatus, setAvatarStatus] = useState("");
 
   /*******************************************
     Avatar Configurations
@@ -62,15 +65,16 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
   //Avatar definition and animations.
   const { nodes, materials, scene } = useGLTF(
     //"/models/64f1a714fe61576b46f27ca2.glb"  <- Original
-    //"/models/AfroMale/AfroMale.glb"
-    "/models/Matt/Matt.glb"
+    "/models/AfroMale/AfroMale.glb"
+    //"/models/Matt/Matt.glb"
   );
 
   const { animations } = useGLTF(
     //"/models/animations.glb"
     //"/models/AfroMale/AfroMaleAnimations.glb"
-    //"/models/AfroMale/animations_v2.glb"
-    "/models/Matt/MattAnimations.glb"
+    "/models/AfroMale/animations_v2.glb"
+    //"/models/Matt/MattAnimations.glb"
+    //"/models/AvaturnMatt/AvaturnMatt.glb"
   );
   
    
@@ -91,7 +95,6 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
   //const [animation, setAnimation] = useState(animations.find((a) => a.name === "Idle") ? "Idle" : animations[0].name);
   const [animation, setAnimation] = useState("");
 
-
   /****************
   Lifecycle configurations
   *****************/
@@ -103,9 +106,10 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
         if (response && response.ok){
             const data = await response.json();
             avatarConfig.current = data.payload; //Dict of configurations {animation:, start: variation, single_use}
-            console.log(`Avatar config: ${avatarConfig.current}`);
+            console.log(`Init avatarStatus: IDLE`);
             setAvatarStatus(statusEnum.IDLE);  // Make sure that the timers are set up only after the config has been loaded.
-            console.log('avatar');
+            console.log('Animations available:');
+            animations.forEach((a)=>{console.log(a.name)});
           }
       }
     }
@@ -127,11 +131,11 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
   // This hook starts and stops playing the audio according to 
   // the queueHasData prop passed from the LLMTalkInterface
   useEffect(() => {
-    console.log('recieved audio data');
-    //TODO make it possible to pass in an animation.
     if (!queueHasData){
-          //setAnimation("Idle");
-          //setAvatarStatus(statusEnum.IDLE);
+          if (avatarStatus===statusEnum.SPEAKING){
+            console.log('avatarStatus=> LISTENING; after speaking')
+            setAvatarStatus(statusEnum.LISTENING);
+          }
           if (dataTuple.current.length!==0){
             // interrupt audio if something is playing.
             try {
@@ -143,21 +147,21 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
           }
           return;
     } else {
+      console.log('avatarStatus => SPEAKING; on queueHasData' );
+      setAvatarStatus(statusEnum.SPEAKING);
       playAudioChunk();
     }
   },[queueHasData]);
 
   const playAudioChunk = async () => {
-    console.log('fetching data')
     dataTuple.current = await onFetchData(); // get the data (audio, json) from the queue higher in the heirarchy.
     if (dataTuple.current && dataTuple.current.length===2){
       dataTuple.current[0].onended = () => {
         playAudioChunk(); // keep fetching audio until exhausted
-        setAvatarStatus(statusEnum.IDLE);
     };
       dataTuple.current[1]=JSON.parse(dataTuple.current[1])
-        dataTuple.current[0].start(0); // start audio
-        audioChunkOffset.current = audioContext.current.currentTime;
+      dataTuple.current[0].start(0); // start audio
+      audioChunkOffset.current = audioContext.current.currentTime;
     }
   }
 
@@ -182,11 +186,8 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
       // If just the name of the animation is passed in then set defaults.
       _animation = {'animation':animation,'fadeInTime':(mixer.stats.actions.inUse === 0 ? 0 : 0.5),"fadeOutTime":0.5,"reps":1}
     }
-    console.log(_animation, actions[_animation['animation']].duration);
-    console.log(`Start FadeIn ${_animation['animation']} @ ${Date.now()}}`);
+    console.log(`FadeIn ${_animation['animation']} @ ${Date.now()}; ${animation['fadeOutTime']}, ${animation['fadeInTime']}`);
     let reps = _animation['reps']===1 ? THREE.LoopOnce : THREE.LoopRepeat;
-    console.log(reps)
-
     //actions[_animation['animation']].clampWhenFinished = true;
     actions[_animation['animation']]
       .setLoop(reps)
@@ -195,9 +196,8 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
       .play();
     return () => {
         try {
-          console.log(`Start: Fadeout ${_animation['animation']} @ ${Date.now()}}`);
+          console.log(`Fadeout ${_animation['animation']} @ ${Date.now()}; ${animation['fadeOutTime']}, ${animation['fadeInTime']}`);
           actions[_animation['animation']].fadeOut(_animation['fadeOutTime']);
-
         }
         catch {}
       }
@@ -222,7 +222,7 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
         );
       }
     });
-  };
+  }; 
 
   const [blink, setBlink] = useState(false);
   const [facialExpression, setFacialExpression] = useState("");
@@ -300,16 +300,22 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
   const lifecycleTimers = useRef([]);
 
   const createSingleShotTimer = (stage) => {
-        //Schedule the animation just the once.
+        //Schedule the animation/ status change just the once.
         const random_start = (1+Math.random()*stage['variation'])*stage['start']*1000;
+        const tag = (1+Math.random()).toString(36).substring(7);
 
         const newTimeout = setTimeout(()=>{
-          console.log(`Start animation ${stage['animation']}, start_time: ${random_start} `)
+          console.log(`Fire status change (Tag=${tag}): ${stage['status']}, start_time: ${random_start} `);
+          if (stage['status']){
+            setAvatarStatus(stage['status']);
+          } else {
+            console.log(`Fire animation (Tag=${tag}): ${stage['animation']}, start_time: ${random_start} `);
           setAnimation(stage['animation']);
-        }, random_start
+          }
+        }, random_start, tag
       );
-      lifecycleTimers.current.push({"id":newTimeout,"expiration":random_start+200});
-      cleanLifecycleTimerList();  //maintain the queue so that it doesn't cause memory leak.
+      lifecycleTimers.current.push({"id":newTimeout,"expiration":Date.now()+random_start+200});
+      //cleanLifecycleTimerList();  //maintain the queue so that it doesn't cause memory leak.
     }
 
   const createRepeatTimer = (stage) => {
@@ -338,7 +344,7 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
               //nested timer triggers the repeat of cycle
               repeatTimer = setTimeout(() => {
                 console.log(`Call repeat animation ${animation}`);
-                cleanLifecycleTimerList();  //maintain the queue so that it doesn't cause memory leak.
+                //cleanLifecycleTimerList();  //maintain the queue so that it doesn't cause memory leak.
                 nextCycle();
               },second);
             lifecycleTimers.current.push({'id':repeatTimer,'expiration':(Date.now()+2*cycle_length)});  //Worst case expiration assuming variation<1.0
@@ -355,6 +361,8 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
   //These are a sequence of animations with deterministic start times that can be dealt with as a single animation.
     
     const randomStart = (1+Math.random()*stage['variation'])*stage['start']*1000;
+    const tag = (Math.random() + 1).toString(36).substring(7);
+
     let fadeInStartDelta = 0; // The time at which the next animation should fade in.
     let cummPrevAnimationDurations = 0; //
     //Ensure that the animation is a list of lists if only a single list was passed in.
@@ -367,7 +375,7 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
         continue;
       }
       if (stage['animation'].length === 3)  {
-        stage['animation'][i].push(1);
+        stage['animation'][i].push(1); //Default to 1 rep
       }
 
       if (i>0){
@@ -378,11 +386,13 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
       }
       
       const startTime = randomStart+cummPrevAnimationDurations;
-      console.log(`Composite: schedule ${stage['animation'][i][0]} @ ${startTime}: ${randomStart}:${cummPrevAnimationDurations}:${fadeInStartDelta}`);
+      console.log(`Create Composite Anim. Timer (Tag =${tag}): schedule ${stage['animation'][i][0]} @ ${startTime}: ${randomStart}:${cummPrevAnimationDurations}:${fadeInStartDelta}`);
       const newSubStageTimer = setTimeout(() => {
+        console.log(`Fire : (Composite timer group key: ${tag}, setAnimation:${stage['animation'][i][0]}`)
         setAnimation({"animation":stage['animation'][i][0],"fadeInTime":stage['animation'][i][1],"fadeOutTime":stage['animation'][i][2],"reps":stage['animation'][i][3]});
-      },startTime);
-      lifecycleTimers.current.push({'id':newSubStageTimer,"expiration":startTime+200});
+      },startTime, tag);
+      lifecycleTimers.current.push({'id':newSubStageTimer,"expiration":Date.now()+startTime+200});
+      console.log(`Push timerID: ${newSubStageTimer}, expiration: ${Date.now()+startTime+200}, timerlist:${lifecycleTimers.current}`);
     }
       //cleanLifecycleTimerList();  //maintain the queue so that it doesn't cause memory leak.
   }
@@ -403,50 +413,57 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
     //Drop the old ones.
     lifecycleTimers.current = lifecycleTimers.current.concat(tempQueue);
     lifecycleTimers.current.splice(0,initialQueueLength); //Mutates the object inplace!
-    console.log(`Timer queue length: ${lifecycleTimers.current.length}`);
   }
   const clearAllLifecycleTimers = () => {
     if (lifecycleTimers.current){
+      const initialQueueLength = lifecycleTimers.current.length;
       lifecycleTimers.current.forEach( (lifeCycleTimer) => {
-        clearTimeout(lifeCycleTimer);
+        clearTimeout(lifeCycleTimer['id']);
       });
-      
+    lifecycleTimers.current.splice(0,initialQueueLength); //Mutates the object inplace!
     }
   }
  
   // Create the timers for the lifecycle stage.
-  // Lifecycle timers 
+  // Lifecycle timers for scheduling sequences of animations and state changes. 
   useEffect(() => {
-    //
     if (statusToConfigNameMapping.hasOwnProperty(avatarStatus) 
           && avatarConfig.current.hasOwnProperty(statusToConfigNameMapping[avatarStatus])){
           //There is an entry in avatarConfig for the animation sequence for this avatarStatus
           // Create an array of timers.
+          if (!Array.isArray(avatarConfig.current[statusToConfigNameMapping[avatarStatus]])){
+            avatarConfig.current[statusToConfigNameMapping[avatarStatus]] = [avatarConfig.current[statusToConfigNameMapping[avatarStatus]]];
+          }
           avatarConfig.current[statusToConfigNameMapping[avatarStatus]].forEach((stage) => {
-            //check the named animation is available and if not then skip it
-
-            if (Array.isArray(stage['animation'])){
-              //Then its a composite animation
-              //Composite animations are specified as list of lists [["animation_name",fade in time in (s), fadeout time(s)],...]
-              //TODO check that all animations are available.
-              console.log('creating composite animation');
-              createCompositeAnimationTimers(stage);
+            //Deal with a state change stage
+            if (stage['status']){
+              console.log(`Schedule state change`)
+              createSingleShotTimer(stage);
             } else {
-              // Else its a single animation.
-              if (animations.find((a) => a.name === stage['animation'])) {
-                if (!stage.hasOwnProperty('cycle') || stage['cycle'] <=0) {
-                  console.log(`creating singleshot timer for ${stage}`);
-                  createSingleShotTimer(stage);
+              //Animation sequence
+              if (Array.isArray(stage['animation'])){
+                //Then its a composite animation
+                //Composite animations are specified as list of lists [["animation_name",fade in time in (s), fadeout time(s)],...]
+                //TODO check that all animations are available.
+                console.log('creating composite animation');
+                createCompositeAnimationTimers(stage);
               } else {
-                console.log(`Creating repeatTimer for ${stage} `);
-                createRepeatTimer(stage);
-                //createSingleShotTimer(stage);
+                // Else its a single animation.
+                if (animations.find((a) => a.name === stage['animation'])) {
+                  if (!stage.hasOwnProperty('cycle') || stage['cycle'] <=0) {
+                    console.log(`creating singleshot timer for ${stage}`);
+                    createSingleShotTimer(stage);
+                } else {
+                  console.log(`Creating repeatTimer for ${stage} `);
+                  createRepeatTimer(stage);
+                  //createSingleShotTimer(stage);
+                }
               }
             }
           }
         });
     }
-    return () => clearAllLifecycleTimers(); //Cleanup on change of avatarStatus
+    return () => {console.log(`Unloading all timers: previous status ${avatarStatus}`);clearAllLifecycleTimers();} //Cleanup on change of avatarStatus
   },[avatarStatus]
 );
 
@@ -456,9 +473,9 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
   ********************************/
 
   return (
-    <group {...props} dispose={null} ref={group}>
+/*     /*<group {...props} dispose={null} ref={group}>
       <primitive object={nodes.Hips} />
-{/*       <skinnedMesh
+       <skinnedMesh
         name="Wolf3D_Body"
         geometry={nodes.Wolf3D_Body.geometry}
         material={materials.Wolf3D_Body}
@@ -520,7 +537,10 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
         morphTargetDictionary={nodes.Wolf3D_Teeth.morphTargetDictionary}
         morphTargetInfluences={nodes.Wolf3D_Teeth.morphTargetInfluences}
       />
-    </group> */}
+    </group> } */
+
+   <group {...props} dispose={null} ref={group}>
+    <primitive object={nodes.Hips} />
     <skinnedMesh
         name="EyeLeft"
         geometry={nodes.EyeLeft.geometry}
@@ -537,11 +557,11 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
         morphTargetDictionary={nodes.EyeRight.morphTargetDictionary}
         morphTargetInfluences={nodes.EyeRight.morphTargetInfluences}
       />
-      <skinnedMesh
+{/*       <skinnedMesh
         geometry={nodes.Wolf3D_Hair.geometry}
         material={materials.Wolf3D_Hair}
         skeleton={nodes.Wolf3D_Hair.skeleton}
-      />
+      /> */}
       <skinnedMesh
         name="Wolf3D_Head"
         geometry={nodes.Wolf3D_Head.geometry}
@@ -558,14 +578,14 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
         morphTargetDictionary={nodes.Wolf3D_Teeth.morphTargetDictionary}
         morphTargetInfluences={nodes.Wolf3D_Teeth.morphTargetInfluences}
       />
-      <skinnedMesh
+{/*       <skinnedMesh
         name="Wolf3D_Beard"
         geometry={nodes.Wolf3D_Beard.geometry}
         material={materials.Wolf3D_Beard}
         skeleton={nodes.Wolf3D_Beard.skeleton}
         morphTargetDictionary={nodes.Wolf3D_Beard.morphTargetDictionary}
         morphTargetInfluences={nodes.Wolf3D_Beard.morphTargetInfluences}
-      />
+      /> */}
       <skinnedMesh
         geometry={nodes.Wolf3D_Body.geometry}
         material={materials.Wolf3D_Body}
@@ -586,15 +606,20 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
         material={materials.Wolf3D_Outfit_Top}
         skeleton={nodes.Wolf3D_Outfit_Top.skeleton}
       />
-      </group>
+      </group>  
+
+
   );
 }
 
 /* useGLTF.preload("/models/64f1a714fe61576b46f27ca2.glb");
 useGLTF.preload("/models/animations.glb"); */
 
-/* useGLTF.preload("/models/AfroMale/AfroMale.glb");
-useGLTF.preload("/models/AfroMale/animations_v2.glb") */
+useGLTF.preload("/models/AfroMale/AfroMale.glb");
+useGLTF.preload("/models/AfroMale/animations_v2.glb")
 
-useGLTF.preload("/models/Matt/Matt.glb");
-useGLTF.preload("/models/Matt/MattAnimations.glb");
+/* useGLTF.preload("/models/Matt/Matt.glb");
+useGLTF.preload("/models/Matt/MattAnimations.glb"); */
+
+//useGLTF.preload("/models/AvaturnMatt/AvaturnMatt.glb");
+//useGLTF.preload("/models/AvaturnMatt/AvaturnAnimations.glb")

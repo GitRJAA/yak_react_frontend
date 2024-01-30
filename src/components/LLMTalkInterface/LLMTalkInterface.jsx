@@ -72,10 +72,10 @@ const LLMTalkInterface = ({ session_id, prompt, onToggleFullscreen, isFullscreen
 
                 // Add source to queue so its played in the correct sequence.
                 audioSourceQueue.current.push(source);
-                console.log('audio pushed to queue')
+                //console.log('audio pushed to queue')
                 if (!queueHasData) {
                     setQueueHasData(true);
-                    console.log('status of queue changed.')
+                    //console.log('status of audio queue changed to HasData.')
                 }
             }
             catch (err){
