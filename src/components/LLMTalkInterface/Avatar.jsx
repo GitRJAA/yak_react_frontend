@@ -191,6 +191,7 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
     }
     console.log(`FadeIn ${_animation['animation']} @ ${Date.now()}; ${animation['fadeOutTime']}, ${animation['fadeInTime']}`);
     let reps = _animation['reps']===1 ? THREE.LoopOnce : THREE.LoopRepeat;
+    
     actions[_animation['animation']].clampWhenFinished = true;
     actions[_animation['animation']]
       .setLoop(reps)
@@ -241,7 +242,7 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
   const [facialExpression, setFacialExpression] = useState("");
 
   useFrame(() => {
-    //debugger;
+    //
       Object.keys(nodes.Head_Mesh.morphTargetDictionary).forEach((key) => {
         const mapping = facialExpressions[facialExpression];
         if (key === "eyeBlinkLeft" || key === "eyeBlinkRight") {
@@ -372,45 +373,83 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
 
 
   const createCompositeAnimationTimers = (stage) => {
-  //Composite animations are specified as list of lists [[animation name:str,fadeInTimeInSeconds:int, fadeOutTimeInSeconds:int, reps: int],...]
-  // If reps === -1 , then this means loop infinitely.
-
-  //These are a sequence of animations with deterministic start times that can be dealt with as a single animation.
+  //Composite animations are specified as list of lists. These are a sequence of animations with deterministic start times that can be dealt with as a single animation.
+  //
+  // args@: stage: [[animation:str,fadeInTimeInSeconds:int, fadeOutTimeInSeconds:int, reps: int],...]
+  //                'animation': name of animation. If the special character '>' is not present then this is treated as the name of the animation.
+  //                           : If '>' is present, the transition operator, then it indicates that the target animation should only be created 
+  //                             if the source animation is the animation at the time the timer is created. e.g if animation === 'Sitting>SitToStand' then this will 
+  //                             schedule the SitToStand animation if the animation at the time the interval timer is created is Sitting. As avatar status changes always delete future timers (resets animations)
+  //                             The animation at the time of the state change will be the one animatino at the time the new times will fire.
+  //                'fadeInTimeInSecond' and 'fadeOutTimeInSeconds is the time in seconds that the consecutive animations will cross fade. The second animation
+  //                            will begin fading in at its fadeouttimeinseconds prior to the end of the last animationclips end. Typically the fadeout and fadein times
+  //                            of suebsequent animations should be equal. If not, then this can lead to stuttering as the first animation finishes and reverts to the default pose (typically a T pose)
+  //                'reps' : int : Either -1,1 . Number of repartitions. -1 for infinte looping , 1 for a single iterations.  
     
     const randomStart = (1+Math.random()*stage['variation'])*stage['start']*1000;
     const tag = (Math.random() + 1).toString(36).substring(7);
 
     let fadeInStartDelta = 0; // The time at which the next animation should fade in.
     let cummPrevAnimationDurations = 0; //
+    let initialAnimation = animation;  // Snapshot of the name of the animation running at the time the timer is created. 
+
+    const conditionOperator = />/;  //Seperator for conditional animation transition.
+
     //Ensure that the animation is a list of lists if only a single list was passed in.
     if (!Array.isArray(stage['animation'][0])){
       stage['animation'] = [stage['animation']];      
     }
 
+    let _stage = {"animation":[]}; //Local copy of composite animation definition.
+    // Deal with conditional animation transitions if relevant.
     for (let i=0; i< stage['animation'].length; i++){
-      if (stage['animation'][i].length<3){
+      if (conditionOperator.test(stage['animation'][i][0])){
+        // Evaluate the conditional.
+        const animationSplit = stage['animation'][i][0].split(conditionOperator);
+        if (animationSplit[0].trim()!==initialAnimation){
+          console.log(`Skip animation substage ${stage['animation']}`);
+          return;              
+        } else {
+          
+          let newSubStage = [...stage['animation'][i]]; //make a copy of the list.
+          newSubStage[0]=animationSplit[1]; // replace conditional with target animation,
+          _stage['animation'].push(newSubStage);
+        }
+      } else {
+        _stage['animation'].push(stage['animation'][i]);  // else just add the existing stage.
+      }
+    }
+
+    // Loop over the preprocessed substages of teh composite animation and schedul the timers to fire the animation transitions.
+    for (let i=0; i< _stage['animation'].length; i++){
+      if (_stage['animation'][i].length<3){
         continue;
       }
-      if (stage['animation'].length === 3)  {
+      if (_stage['animation'].length === 3)  {
         stage['animation'][i].push(1); //Default to 1 rep
       }
 
       if (i>0){
         //The current animation should cross-fade with the previous at the fade-out time before the end of the previous animation.
-        //Note duration is returned in seconds.
-        fadeInStartDelta = -stage['animation'][i][1]*1000;
-        cummPrevAnimationDurations += animations.find((a)=> a.name === stage['animation'][i-1][0]).duration*1000+fadeInStartDelta;  // get duration of previous animation in the composite animatino list
+        fadeInStartDelta = -_stage['animation'][i][1]*1000;
+        cummPrevAnimationDurations += animations.find((a)=> a.name === _stage['animation'][i-1][0]).duration*1000+fadeInStartDelta;  // get duration of previous animation in the composite animatino list
       }
       
       const startTime = randomStart+cummPrevAnimationDurations;
-      console.log(`Create Composite Anim. Timer (Tag =${tag}): schedule ${stage['animation'][i][0]} @ ${startTime}: ${randomStart}:${cummPrevAnimationDurations}:${fadeInStartDelta}`);
+      console.log(`Create Composite Anim. Timer (Tag =${tag}): schedule ${_stage['animation'][i][0]} @ ${startTime}: ${randomStart}:${cummPrevAnimationDurations}:${fadeInStartDelta}`);
+
       const newSubStageTimer = setTimeout(() => {
-        console.log(`Fire : (Composite timer group key: ${tag}, setAnimation:${stage['animation'][i][0]}, passedInCurrentAnimation : ${animation}`)
-        const newAnimation = {"animation":stage['animation'][i][0],"fadeInTime":stage['animation'][i][1],"fadeOutTime":stage['animation'][i][2],"reps":stage['animation'][i][3]};
+        // Create a setTimer() object to fire an animation change.
+        // @args: tag : str: unique identifier of this group of animations.
+        //        startTime: absolutetime (in ms) when the timer should fire.
+        console.log(`Fire : (Composite timer group key: ${tag}, setAnimation:${_stage['animation'][i][0]}, passedInCurrentAnimation : ${animation}`);
+        const newAnimation = {"animation":_stage['animation'][i][0],"fadeInTime":_stage['animation'][i][1],"fadeOutTime":_stage['animation'][i][2],"reps":_stage['animation'][i][3]};
         console.log(`InsideTimer: newAnimation: ${JSON.stringify(newAnimation)}, current animationRef:${animationRef.current}`);
+
         animationSetter(newAnimation);
       },startTime, tag);
-      lifecycleTimers.current.push({'id':newSubStageTimer,"expiration":Date.now()+startTime+200});
+
+      lifecycleTimers.current.push({'id':newSubStageTimer,"expiration":Date.now()+startTime+200}); //This array is used for clearing up timers to avoid memory leak.
       console.log(`Push timerID: ${newSubStageTimer}, expiration: ${Date.now()+startTime+200}, timerlist:${lifecycleTimers.current}`);
     }
       cleanLifecycleTimerList();  //maintain the queue so that it doesn't cause memory leak.
