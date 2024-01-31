@@ -4,13 +4,11 @@ In particular, the varisous stages of idle that will trigger certain animations 
 @mtman
 */
 
-import { createContext, useContext, useRef, useEffect, useState } from "react";
+import { createContext, useContext, useRef} from "react";
 
 const AvatarContext = createContext(); 
 
 export const AvatarProvider = ({children}) => {
-
-    const [avatarStatus, setAvatarStatus] = useState("");  //Lifecylce of Avatar e.g. idle, start talking, has started hearing input from the customer etc
 
     const statusEnum = {
         IDLE: 'Idle',
@@ -18,18 +16,23 @@ export const AvatarProvider = ({children}) => {
         SPEAKING: 'Speaking'
     }
 
-
-    const getAvatarStatusNonRerender = () => {
-        // A getter for the status that avoids re-rendering all child components.
-        return avatarStatus;
+    //const [avatarStatus, setAvatarStatus] = useState("");  //Lifecylce of Avatar e.g. idle, start talking, has started hearing input from the customer etc
+    //USe these getters and setters for type safety.
+    const avatarStatusRef = useRef("");
+    const setAvatarStatus = (newStatus) =>{
+        if (Object.values(statusEnum).includes(newStatus)){
+            avatarStatusRef.current = newStatus;
+            console.log(`Status change in context => ${newStatus}`)
+        } else {
+            console.log(`Error: ${newStatus} is not value statusEnum`);
+        }
     }
 
     return (
         <AvatarContext.Provider
             value = {{
-                avatarStatus,
-                setAvatarStatus,
-                getAvatarStatusNonRerender,
+                avatarStatusRef,
+                setAvatarStatus,               
                 statusEnum,
             }}
             >

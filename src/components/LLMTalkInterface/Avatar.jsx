@@ -52,12 +52,10 @@ const azure_to_aculus_viseme_map =
 
 export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
 
-  //const { avatarStatus, statusEnum, setAvatarStatus } = useAvatarContext();  //Shared avatar status across components
-  const { statusEnum } = useAvatarContext();  //Shared avatar status across components
+  const { statusEnum, avatarStatusRef, setAvatarStatus } = useAvatarContext();  //Shared avatar status across components
   const { sessionID } = useContext(AppContext); 
 
-  const avatarStatus = useRef(null);
-  const avatarLastStatus = useRef(null);
+  const avatarLastStatus = useRef(null); // Used to detect change in the status.
 
   /*******************************************
     Avatar Configurations
@@ -65,17 +63,17 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
 
   //Avatar definition and animations.
   const { nodes, materials, scene } = useGLTF(
-    //"/models/64f1a714fe61576b46f27ca2.glb"  <- Original
-    "/models/AfroMale/AfroMale.glb"
+    //"/models/MangaGirl/64f1a714fe61576b46f27ca2.glb"
+    //"/models/AfroMale/AfroMale.glb"
     //"/models/Matt/Matt.glb"
+    "/models/AvaturnMatt/AvaturnMatt.glb"
   );
 
   const { animations } = useGLTF(
-    //"/models/animations.glb"
-    //"/models/AfroMale/AfroMaleAnimations.glb"
-    "/models/AfroMale/animations_v2.glb"
+    //"/models/MangaGirl/animations.glb"
+    //"/models/AfroMale/animations_v2.glb"
     //"/models/Matt/MattAnimations.glb"
-    //"/models/AvaturnMatt/AvaturnMatt.glb"
+    "/models/AvaturnMatt/AvaturnMattAnimationsv3.glb"
   );
   
    
@@ -112,7 +110,7 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
             const data = await response.json();
             avatarConfig.current = data.payload; //Dict of configurations {animation:, start: variation, single_use}
             console.log(`Init avatarStatus: IDLE`);
-            avatarStatus.current = statusEnum.IDLE;  // Make sure that the timers are set up only after the config has been loaded.
+            avatarStatusRef.current = statusEnum.IDLE;  // Make sure that the timers are set up only after the config has been loaded.
             console.log('Animations available:');
             animations.forEach((a)=>{console.log(a.name)});
           }
@@ -137,9 +135,9 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
   // the queueHasData prop passed from the LLMTalkInterface
   useEffect(() => {
     if (!queueHasData){
-          if (avatarStatus.current===statusEnum.SPEAKING){
+          if (avatarStatusRef.current===statusEnum.SPEAKING){
             console.log('avatarStatus=> LISTENING; after speaking')
-            avatarStatus.current = statusEnum.LISTENING;
+            setAvatarStatus(statusEnum.LISTENING);
           }
           if (dataTuple.current.length!==0){
             // interrupt audio if something is playing.
@@ -153,7 +151,7 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
           return;
     } else {
       console.log('avatarStatus => SPEAKING; on queueHasData' );
-      avatarStatus.current = statusEnum.SPEAKING;
+      setAvatarStatus(statusEnum.SPEAKING);
       playAudioChunk();
     }
   },[queueHasData]);
@@ -243,7 +241,8 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
   const [facialExpression, setFacialExpression] = useState("");
 
   useFrame(() => {
-      Object.keys(nodes.EyeLeft.morphTargetDictionary).forEach((key) => {
+    //debugger;
+      Object.keys(nodes.Head_Mesh.morphTargetDictionary).forEach((key) => {
         const mapping = facialExpressions[facialExpression];
         if (key === "eyeBlinkLeft" || key === "eyeBlinkRight") {
           return; // eyes wink/blink are handled separately
@@ -322,7 +321,7 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
         const newTimeout = setTimeout(()=>{
           console.log(`Fire status change (Tag=${tag}): ${stage['status']}, start_time: ${random_start} `);
           if (stage['status']){
-            avatarStatus.current = stage['status'];
+            avatarStatusRef.current = stage['status'];
           } else {
             console.log(`Fire animation (Tag=${tag}): ${stage['animation']}, start_time: ${random_start} `);
           //setAnimation(stage['animation']);
@@ -450,17 +449,17 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
 const onStatusChange = () => {
     // Callback to handle status change. 
     // Responsible for co-ordinating the sequence of timers to execute the animation sequences. 
-    console.log(`onStatusChange: Unloading all timers: previous status ${avatarStatus.current}`);
+    console.log(`onStatusChange: Unloading all timers: previous status ${avatarStatusRef.current}`);
     clearAllLifecycleTimers();
 
-    if (statusToConfigNameMapping.hasOwnProperty(avatarStatus.current) 
-    && avatarConfig.current.hasOwnProperty(statusToConfigNameMapping[avatarStatus.current])){
+    if (statusToConfigNameMapping.hasOwnProperty(avatarStatusRef.current) 
+    && avatarConfig.current.hasOwnProperty(statusToConfigNameMapping[avatarStatusRef.current])){
     // Makesure the seuqence of animations is an Array. Its permitted for just a single animation to be entered in the avatarConfiguration settings UI.
-    if (!Array.isArray(avatarConfig.current[statusToConfigNameMapping[avatarStatus.current]])){
-      avatarConfig.current[statusToConfigNameMapping[avatarStatus.current]] = [avatarConfig.current[statusToConfigNameMapping[avatarStatus.current]]];
+    if (!Array.isArray(avatarConfig.current[statusToConfigNameMapping[avatarStatusRef.current]])){
+      avatarConfig.current[statusToConfigNameMapping[avatarStatusRef.current]] = [avatarConfig.current[statusToConfigNameMapping[avatarStatusRef.current]]];
     }
 
-    avatarConfig.current[statusToConfigNameMapping[avatarStatus.current]].forEach((stage) => {
+    avatarConfig.current[statusToConfigNameMapping[avatarStatusRef.current]].forEach((stage) => {
       //Deal with a state change stage with the avartarStatus configuration. e.g {"idle_config":[{"state":,...}]}
       if (stage['status']){
         console.log(`Schedule state change`);
@@ -498,11 +497,11 @@ useEffect(()=>{
   
   console.log('Create statusPoll timer');
   const pollStatusTimer = setInterval(() => {
-    console.log(`check status ${avatarStatus.current}, last: ${avatarStatus.current}`);
-    if (avatarStatus.current || avatarLastStatus.current){
-      if (avatarStatus.current !== avatarLastStatus.current){
+    console.log(`check status ${avatarStatusRef.current}, last: ${avatarStatusRef.current}`);
+    if (avatarStatusRef.current || avatarLastStatus.current){
+      if (avatarStatusRef.current !== avatarLastStatus.current){
         console.log('status change detected')
-        avatarLastStatus.current = avatarStatus.current;
+        avatarLastStatus.current = avatarStatusRef.current;
         onStatusChange();
       }
     }
@@ -516,141 +515,89 @@ useEffect(()=>{
   ********************************/
 
   return (
-/*     /*<group {...props} dispose={null} ref={group}>
-      <primitive object={nodes.Hips} />
-       <skinnedMesh
-        name="Wolf3D_Body"
-        geometry={nodes.Wolf3D_Body.geometry}
-        material={materials.Wolf3D_Body}
-        skeleton={nodes.Wolf3D_Body.skeleton}
-      />
-      <skinnedMesh
-        name="Wolf3D_Outfit_Bottom"
-        geometry={nodes.Wolf3D_Outfit_Bottom.geometry}
-        material={materials.Wolf3D_Outfit_Bottom}
-        skeleton={nodes.Wolf3D_Outfit_Bottom.skeleton}
-      />
-      <skinnedMesh
-        name="Wolf3D_Outfit_Footwear"
-        geometry={nodes.Wolf3D_Outfit_Footwear.geometry}
-        material={materials.Wolf3D_Outfit_Footwear}
-        skeleton={nodes.Wolf3D_Outfit_Footwear.skeleton}
-      />
-      <skinnedMesh
-        name="Wolf3D_Outfit_Top"
-        geometry={nodes.Wolf3D_Outfit_Top.geometry}
-        material={materials.Wolf3D_Outfit_Top}
-        skeleton={nodes.Wolf3D_Outfit_Top.skeleton}
-      />
-      <skinnedMesh
-        name="Wolf3D_Hair"
-        geometry={nodes.Wolf3D_Hair.geometry}
-        material={materials.Wolf3D_Hair}
-        skeleton={nodes.Wolf3D_Hair.skeleton}
-      />
-      <skinnedMesh
-        name="EyeLeft"
-        geometry={nodes.EyeLeft.geometry}
-        material={materials.Wolf3D_Eye}
-        skeleton={nodes.EyeLeft.skeleton}
-        morphTargetDictionary={nodes.EyeLeft.morphTargetDictionary}
-        morphTargetInfluences={nodes.EyeLeft.morphTargetInfluences}
-      />
-      <skinnedMesh
-        name="EyeRight"
-        geometry={nodes.EyeRight.geometry}
-        material={materials.Wolf3D_Eye}
-        skeleton={nodes.EyeRight.skeleton}
-        morphTargetDictionary={nodes.EyeRight.morphTargetDictionary}
-        morphTargetInfluences={nodes.EyeRight.morphTargetInfluences}
-      />
-      <skinnedMesh
-        name="Wolf3D_Head"
-        geometry={nodes.Wolf3D_Head.geometry}
-        material={materials.Wolf3D_Skin}
-        skeleton={nodes.Wolf3D_Head.skeleton}
-        morphTargetDictionary={nodes.Wolf3D_Head.morphTargetDictionary}
-        morphTargetInfluences={nodes.Wolf3D_Head.morphTargetInfluences}
-      />
-      <skinnedMesh
-        name="Wolf3D_Teeth"
-        geometry={nodes.Wolf3D_Teeth.geometry}
-        material={materials.Wolf3D_Teeth}
-        skeleton={nodes.Wolf3D_Teeth.skeleton}
-        morphTargetDictionary={nodes.Wolf3D_Teeth.morphTargetDictionary}
-        morphTargetInfluences={nodes.Wolf3D_Teeth.morphTargetInfluences}
-      />
-    </group> } */
+<group ref={group} {...props} dispose={null}>
 
-   <group {...props} dispose={null} ref={group}>
-    <primitive object={nodes.Hips} />
-    <skinnedMesh
-        name="EyeLeft"
-        geometry={nodes.EyeLeft.geometry}
-        material={materials.Wolf3D_Eye}
-        skeleton={nodes.EyeLeft.skeleton}
-        morphTargetDictionary={nodes.EyeLeft.morphTargetDictionary}
-        morphTargetInfluences={nodes.EyeLeft.morphTargetInfluences}
-      />
-      <skinnedMesh
-        name="EyeRight"
-        geometry={nodes.EyeRight.geometry}
-        material={materials.Wolf3D_Eye}
-        skeleton={nodes.EyeRight.skeleton}
-        morphTargetDictionary={nodes.EyeRight.morphTargetDictionary}
-        morphTargetInfluences={nodes.EyeRight.morphTargetInfluences}
-      />
-{/*       <skinnedMesh
-        geometry={nodes.Wolf3D_Hair.geometry}
-        material={materials.Wolf3D_Hair}
-        skeleton={nodes.Wolf3D_Hair.skeleton}
-      /> */}
-      <skinnedMesh
-        name="Wolf3D_Head"
-        geometry={nodes.Wolf3D_Head.geometry}
-        material={materials.Wolf3D_Skin}
-        skeleton={nodes.Wolf3D_Head.skeleton}
-        morphTargetDictionary={nodes.Wolf3D_Head.morphTargetDictionary}
-        morphTargetInfluences={nodes.Wolf3D_Head.morphTargetInfluences}
-      />
-      <skinnedMesh
-        name="Wolf3D_Teeth"
-        geometry={nodes.Wolf3D_Teeth.geometry}
-        material={materials.Wolf3D_Teeth}
-        skeleton={nodes.Wolf3D_Teeth.skeleton}
-        morphTargetDictionary={nodes.Wolf3D_Teeth.morphTargetDictionary}
-        morphTargetInfluences={nodes.Wolf3D_Teeth.morphTargetInfluences}
-      />
-{/*       <skinnedMesh
-        name="Wolf3D_Beard"
-        geometry={nodes.Wolf3D_Beard.geometry}
-        material={materials.Wolf3D_Beard}
-        skeleton={nodes.Wolf3D_Beard.skeleton}
-        morphTargetDictionary={nodes.Wolf3D_Beard.morphTargetDictionary}
-        morphTargetInfluences={nodes.Wolf3D_Beard.morphTargetInfluences}
-      /> */}
-      <skinnedMesh
-        geometry={nodes.Wolf3D_Body.geometry}
-        material={materials.Wolf3D_Body}
-        skeleton={nodes.Wolf3D_Body.skeleton}
-      />
-      <skinnedMesh
-        geometry={nodes.Wolf3D_Outfit_Bottom.geometry}
-        material={materials.Wolf3D_Outfit_Bottom}
-        skeleton={nodes.Wolf3D_Outfit_Bottom.skeleton}
-      />
-      <skinnedMesh
-        geometry={nodes.Wolf3D_Outfit_Footwear.geometry}
-        material={materials.Wolf3D_Outfit_Footwear}
-        skeleton={nodes.Wolf3D_Outfit_Footwear.skeleton}
-      />
-      <skinnedMesh
-        geometry={nodes.Wolf3D_Outfit_Top.geometry}
-        material={materials.Wolf3D_Outfit_Top}
-        skeleton={nodes.Wolf3D_Outfit_Top.skeleton}
-      />
-      </group>  
+          <primitive object={nodes.Hips} />
+          <skinnedMesh
+            name="Body_Mesh"
+            geometry={nodes.Body_Mesh.geometry}
+            material={materials.Body}
+            skeleton={nodes.Body_Mesh.skeleton}
+          />
+          <skinnedMesh
+            name="Eye_Mesh"
+            geometry={nodes.Eye_Mesh.geometry}
+            material={materials.Eyes}
+            skeleton={nodes.Eye_Mesh.skeleton}
+            morphTargetDictionary={nodes.Eye_Mesh.morphTargetDictionary}
+            morphTargetInfluences={nodes.Eye_Mesh.morphTargetInfluences}
+          />
+          <skinnedMesh
+            name="EyeAO_Mesh"
+            geometry={nodes.EyeAO_Mesh.geometry}
+            material={materials.EyeAO}
+            skeleton={nodes.EyeAO_Mesh.skeleton}
+            morphTargetDictionary={nodes.EyeAO_Mesh.morphTargetDictionary}
+            morphTargetInfluences={nodes.EyeAO_Mesh.morphTargetInfluences}
+          />
+          <skinnedMesh
+            name="Eyelash_Mesh"
+            geometry={nodes.Eyelash_Mesh.geometry}
+            material={materials.Eyelash}
+            skeleton={nodes.Eyelash_Mesh.skeleton}
+            morphTargetDictionary={nodes.Eyelash_Mesh.morphTargetDictionary}
+            morphTargetInfluences={nodes.Eyelash_Mesh.morphTargetInfluences}
+          />
+          <skinnedMesh
+            name="Head_Mesh"
+            geometry={nodes.Head_Mesh.geometry}
+            material={materials.Head}
+            skeleton={nodes.Head_Mesh.skeleton}
+            morphTargetDictionary={nodes.Head_Mesh.morphTargetDictionary}
+            morphTargetInfluences={nodes.Head_Mesh.morphTargetInfluences}
+          />
+          <skinnedMesh
+            name="Teeth_Mesh"
+            geometry={nodes.Teeth_Mesh.geometry}
+            material={materials.Teeth}
+            skeleton={nodes.Teeth_Mesh.skeleton}
+            morphTargetDictionary={nodes.Teeth_Mesh.morphTargetDictionary}
+            morphTargetInfluences={nodes.Teeth_Mesh.morphTargetInfluences}
+          />
+          <skinnedMesh
+            name="Tongue_Mesh"
+            geometry={nodes.Tongue_Mesh.geometry}
+            material={materials.Teeth}
+            skeleton={nodes.Tongue_Mesh.skeleton}
+            morphTargetDictionary={nodes.Tongue_Mesh.morphTargetDictionary}
+            morphTargetInfluences={nodes.Tongue_Mesh.morphTargetInfluences}
+          />
+          <skinnedMesh
+            name="avaturn_hair_0"
+            geometry={nodes.avaturn_hair_0.geometry}
+            material={materials.avaturn_hair_0_material}
+            skeleton={nodes.avaturn_hair_0.skeleton}
+          />
+          <skinnedMesh
+            name="avaturn_hair_1"
+            geometry={nodes.avaturn_hair_1.geometry}
+            material={materials.avaturn_hair_1_material}
+            skeleton={nodes.avaturn_hair_1.skeleton}
+          />
+          <skinnedMesh
+            name="avaturn_shoes_0"
+            geometry={nodes.avaturn_shoes_0.geometry}
+            material={materials.avaturn_shoes_0_material}
+            skeleton={nodes.avaturn_shoes_0.skeleton}
+          />
+          <skinnedMesh
+            name="avaturn_look_0"
+            geometry={nodes.avaturn_look_0.geometry}
+            material={materials.avaturn_look_0_material}
+            skeleton={nodes.avaturn_look_0.skeleton}
+          />
 
+    </group>
 
   );
 }
@@ -658,11 +605,12 @@ useEffect(()=>{
 /* useGLTF.preload("/models/64f1a714fe61576b46f27ca2.glb");
 useGLTF.preload("/models/animations.glb"); */
 
-useGLTF.preload("/models/AfroMale/AfroMale.glb");
-useGLTF.preload("/models/AfroMale/animations_v2.glb")
+//useGLTF.preload("/models/AfroMale/AfroMale.glb");
+//useGLTF.preload("/models/AfroMale/animations_v2.glb")
+//useGLTF.preload("/models/AfroMale/AfroMaleAnimationsv2.glb")
 
 /* useGLTF.preload("/models/Matt/Matt.glb");
 useGLTF.preload("/models/Matt/MattAnimations.glb"); */
 
-//useGLTF.preload("/models/AvaturnMatt/AvaturnMatt.glb");
-//useGLTF.preload("/models/AvaturnMatt/AvaturnAnimations.glb")
+useGLTF.preload("/models/AvaturnMatt/AvaturnMatt.glb");
+useGLTF.preload("/models/AvaturnMatt/AvaturnMattAnimationsv3.glb")

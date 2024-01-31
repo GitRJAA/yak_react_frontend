@@ -30,7 +30,7 @@ const WebRTCSTT = ({ onSpeechConverted, onConversionDone, onRecorderStatusChange
     const connectionStatus = useRef(null);
 
     const { tempSttToken } = useContext(AppContext);
-    const { statusEnum, getAvatarStatusNonRerender, setAvatarStatus } = useAvatarContext();
+    const { statusEnum, avatarStatusRef, setAvatarStatus } = useAvatarContext();
 
     useEffect(()=>{
       if (autoStart){
@@ -132,11 +132,9 @@ const WebRTCSTT = ({ onSpeechConverted, onConversionDone, onRecorderStatusChange
               //console.log(`last message:${lastMessageJSON}`);
               //Set avatar status to listening just started
               if (lastMessageJSON.text && lastMessageJSON.text!==''){ //There are signalling messages sometimes returned so check that we have text in the message.
-                //debugger;
                   console.log(lastMessageJSON.text);
                   onSpeechConverted(lastMessageJSON.text);
-                  if (getAvatarStatusNonRerender()!==statusEnum.LISTENING){
-                      //debugger;
+                  if (avatarStatusRef.current!==statusEnum.LISTENING){
                       console.log(`Set avatarStatus to ${statusEnum.LISTENING} in webrtc`)
                       setAvatarStatus(statusEnum.LISTENING);
                   }
