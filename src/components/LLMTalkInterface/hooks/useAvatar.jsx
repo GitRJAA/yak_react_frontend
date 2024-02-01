@@ -4,11 +4,21 @@ In particular, the varisous stages of idle that will trigger certain animations 
 @mtman
 */
 
-import { createContext, useContext, useRef} from "react";
+import { createContext, useContext, useRef, useState} from "react";
 
 const AvatarContext = createContext(); 
 
 export const AvatarProvider = ({children}) => {
+  
+    const enumAvatar = {
+        AVATURNMATT: {"model":'/models/AvaturnMatt/AvaturnMattv2.glb',"animations":'/models/AvaturnMatt/AvaturnMattAnimationsv3.glb'},
+        AFROMALE: {"model":"/models/AfroMale/AfroMale.glb","animations":"/models/AfroMale/animations_v2.glb"},
+        CARTOONMATT: {"model":"/models/Matt/Matt.glb","animations":"/models/Matt/MattAnimations.glb"}
+    }
+    /* useGLTF.preload("/models/64f1a714fe61576b46f27ca2.glb");
+useGLTF.preload("/models/animations.glb"); */
+  
+    const [avatarDefinition, setAvatarDefinition] = useState(enumAvatar.AVATURNMATT); /// ['AvaturnMatt','AfroMale','Manga'];
 
     const statusEnum = {
         IDLE: 'Idle',
@@ -34,6 +44,7 @@ export const AvatarProvider = ({children}) => {
                 avatarStatusRef,
                 setAvatarStatus,               
                 statusEnum,
+                avatarDefinition
             }}
             >
                 {children}
