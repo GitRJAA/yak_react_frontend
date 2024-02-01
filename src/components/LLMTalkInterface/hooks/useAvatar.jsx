@@ -10,15 +10,16 @@ const AvatarContext = createContext();
 
 export const AvatarProvider = ({children}) => {
   
-    const enumAvatar = {
-        AVATURNMATT: {"model":'/models/AvaturnMatt/AvaturnMattv2.glb',"animations":'/models/AvaturnMatt/AvaturnMattAnimationsv3.glb'},
-        AFROMALE: {"model":"/models/AfroMale/AfroMale.glb","animations":"/models/AfroMale/animations_v2.glb"},
-        CARTOONMATT: {"model":"/models/Matt/Matt.glb","animations":"/models/Matt/MattAnimations.glb"}
+    // Collection of all pre-made avatars models and their animations.
+    const avatarCollection = {
+        AVATURNMATT: {"name":"AVATURNMATT","model":'/models/AvaturnMatt/AvaturnMattv2.glb',"animations":'/models/AvaturnMatt/AvaturnMattAnimationsv3.glb'},
+        AFROMALE: {"name":"AFROMALE","model":"/models/AfroMale/AfroMale.glb","animations":"/models/AfroMale/AfroMaleAnimationsv3.glb"},
+        CARTOONMATT: {"name":"CARTOONMATT","model":"/models/Matt/Matt.glb","animations":"/models/Matt/MattAnimations.glb"}
     }
     /* useGLTF.preload("/models/64f1a714fe61576b46f27ca2.glb");
-useGLTF.preload("/models/animations.glb"); */
-  
-    const [avatarDefinition, setAvatarDefinition] = useState(enumAvatar.AVATURNMATT); /// ['AvaturnMatt','AfroMale','Manga'];
+    useGLTF.preload("/models/animations.glb"); */
+    
+    const [avatarDefinition, setAvatarDefinition] = useState(avatarCollection.AVATURNMATT); 
 
     const statusEnum = {
         IDLE: 'Idle',

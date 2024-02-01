@@ -1,7 +1,20 @@
+This file provided details on how to select an avatar ( meaning, choosing the .glb model and animations)
+and configuring the animations triggered by each avatarstatus change.
+
+Avatar Selection
+==================
+The tuple of avatar model file and avatar animations are refered to as the Avatar Definition. The Avatar Definition
+is selected in the useAvatar hook located in src\components\LLMTalkInterface\hooks.
+The pairs are recording in the avatarCollection dictionary. The state object avatarDefinition stores the key of current definition.
+
+
+
 Avatar configuration
 ===================
 
-The avatar configuration in the setting page expects well formed JSON. The scheme is as follows. 
+The avatar configuration in the setting page is a json string for voice and animation configuration. Voice is supplied by Azure 
+
+The scheme is as follows. 
 
 {
     "voice": azure voice id.e.g en-AU-TimNerual,

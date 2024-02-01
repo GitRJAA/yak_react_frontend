@@ -11,6 +11,7 @@ import { AppContext } from "../../api/services/AppContext";
 import AvaturnMatt from "./AvatarCollection/AvaturnMatt";
 
 import * as THREE from "three";
+import AfroMale from "./AvatarCollection/AfroMale";
 
 
 //Azure to Oculus viseme (best endevours) mapping
@@ -57,6 +58,7 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
   const { sessionID } = useContext(AppContext); 
 
   const avatarLastStatus = useRef(null); // Used to detect change in the status.
+  const referenceSkinnedMesh = useRef(null); // Use to store the first skinned mesh in the model. Skinned meshes contain all the bendshapes/visemes.
 
   /*******************************************
     Avatar Configurations
@@ -235,8 +237,20 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
   const [facialExpression, setFacialExpression] = useState("");
 
   useFrame(() => {
-    //
-      Object.keys(nodes.Head_Mesh.morphTargetDictionary).forEach((key) => {
+    //debugger;
+    if (!referenceSkinnedMesh.current){
+      // Get a skinnned mesh from the model because that will contain all the visemes and blendshapes.
+          Object.keys(nodes).forEach((node) => {
+          if ( (nodes[node].isSkinnedMesh=== true) && (nodes[node].morphTargetDictionary !== undefined)){
+            referenceSkinnedMesh.current = nodes[node];
+            return;
+          }
+        });
+      }
+    if (!referenceSkinnedMesh.current){
+      throw new Error(" No skinned meshes found in the model.A skinned mesh with morphtargets is needed to acces the morphTargets for visemes and blendshapes");
+    }
+      Object.keys(referenceSkinnedMesh.current.morphTargetDictionary).forEach((key) => {
         const mapping = facialExpressions[facialExpression];
         if (key === "eyeBlinkLeft" || key === "eyeBlinkRight") {
           return; // eyes wink/blink are handled separately
@@ -547,6 +561,12 @@ useEffect(()=>{
   ********************************/
 
   return (
-   <AvaturnMatt group={group} nodes={nodes} materials={materials} props =  {props}></AvaturnMatt>
+    <>
+    {console.log(avatarDefinition['name'])}
+       { avatarDefinition['name'] === 'AVATURNMATT' && <AvaturnMatt group={group} nodes={nodes} materials={materials} props =  {props}></AvaturnMatt>}
+       { avatarDefinition['name'] === 'AFROMALE' && <AfroMale group={group} nodes={nodes} materials={materials} props =  {props}></AfroMale>}
+   </>
   );
 }
+
+
