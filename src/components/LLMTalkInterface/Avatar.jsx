@@ -302,7 +302,7 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
     const nextBlink = () => {
       blinkTimeout = setTimeout(() => {
         if (Math.random()<0.4){
-          blinkAmount.current  = 0.6;
+          blinkAmount.current  = 0.8;
         } else {
           blinkAmount.current = 1.0;
         }
@@ -311,7 +311,7 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
           setBlink(false);
           nextBlink();
         }, 200);
-      }, THREE.MathUtils.randInt(1000, 5000));
+      }, THREE.MathUtils.randInt(1000, 6000));
     };
     nextBlink();
     return () => clearTimeout(blinkTimeout);

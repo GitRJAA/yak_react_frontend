@@ -1,8 +1,11 @@
 # Yakwith.ai Front-End
 
-A 3D animated Avatar with voice interaction with Large Language Models (LLMS) accessed through the yakwith.ai API ([API](https://github.com/mattma1970/yakwith.ai)).
+A 3D animated Virtual Human using voice interaction with Large Language Models (LLMS) which is served through the yakwith.ai API ([API](https://github.com/mattma1970/yakwith.ai)). The animations are rendered in the browser without the need for any plug-ins or hefty GPU's. The goal is to create  platform agnost virtual human front end for an LLM agent back-end.
 
-Voice interaction ( Speech-To-Text ) is currently provided by Assembly.ai which uses websockets to connect to and stream audio to the realtime transciption endpoint in chunks of 250ms of audio. Assembly.ai. This is a paid service and you'll need to set up an account to make use of it.
+Check out this example to see some early results. This example is running using locally hosted,7B parameter LLM (OpenOrca) on a RTX 4090.
+[Example](https://www.youtube.com/watch?v=pVYCfeJW7_A)
+
+The avatar created using Avaturn.me.  and the voice synthesis is using Azure speech SDK from their cognitive services. Voice interaction ( Speech-To-Text ) is currently provided by Assembly.ai which uses websockets to connect to and stream audio to the realtime transciption endpoint in chunks of 250ms of audio. Assembly.ai. This is a paid service and you'll need to set up an account to make use of it.
 
 The app runs in the browser and in order for the browser to access the camera (used for ingesting) and the speaker, the UI needs to served over a secure connection (https). There are number a number ways this can be done, but I found that using cloudflare and nginx proxy manager to be a good solution that also allows the app to be easily shared. [cloudflare, nginx](https://www.reddit.com/r/selfhosted/comments/icwvox/super_simple_cloudflare_and_nginx_proxy_manager/). You can use free Let's Encrypt certificates so there is no need to muddle through with self-signed certs.
 
