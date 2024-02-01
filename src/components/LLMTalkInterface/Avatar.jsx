@@ -66,7 +66,7 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
     //"/models/MangaGirl/64f1a714fe61576b46f27ca2.glb"
     //"/models/AfroMale/AfroMale.glb"
     //"/models/Matt/Matt.glb"
-    "/models/AvaturnMatt/AvaturnMatt.glb"
+    "/models/AvaturnMatt/AvaturnMattv2.glb"
   );
 
   const { animations } = useGLTF(
@@ -651,5 +651,5 @@ useGLTF.preload("/models/animations.glb"); */
 /* useGLTF.preload("/models/Matt/Matt.glb");
 useGLTF.preload("/models/Matt/MattAnimations.glb"); */
 
-useGLTF.preload("/models/AvaturnMatt/AvaturnMatt.glb");
+useGLTF.preload("/models/AvaturnMatt/AvaturnMattv2.glb");
 useGLTF.preload("/models/AvaturnMatt/AvaturnMattAnimationsv3.glb")
