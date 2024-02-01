@@ -12,6 +12,7 @@ import AvaturnMatt from "./AvatarCollection/AvaturnMatt";
 
 import * as THREE from "three";
 import AfroMale from "./AvatarCollection/AfroMale";
+import MattsHead from "./AvatarCollection/MattsHead";
 
 
 //Azure to Oculus viseme (best endevours) mapping
@@ -262,8 +263,8 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
         }
       });
 
-    lerpMorphTarget("eyeBlinkLeft", blink  ? 1 : 0, 0.5);
-    lerpMorphTarget("eyeBlinkRight", blink  ? 1 : 0, 0.5);
+    lerpMorphTarget("eyeBlinkLeft", blink  ? blinkAmount.current : 0, 0.6);
+    lerpMorphTarget("eyeBlinkRight", blink  ? blinkAmount.current : 0, 0.6);
 
     // LIPSYNC
     const appliedMorphTargets = [];
@@ -276,7 +277,7 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
           currentAudioTime <= mouthCue.end
         ) {
           appliedMorphTargets.push(azure_to_aculus_viseme_map[mouthCue.value]);
-          lerpMorphTarget(azure_to_aculus_viseme_map[mouthCue.value], 1, 0.25);
+          lerpMorphTarget(azure_to_aculus_viseme_map[mouthCue.value], 0.9, 0.29);
           break;
         }
       }
@@ -294,12 +295,17 @@ export function Avatar({onFetchData, queueHasData, audioContext,  props}) {
   /**************************
     Humanizing Animations
   ***************************/
-
+  const blinkAmount = useRef(0.5);
   // Periodically blink.
   useEffect(() => {
     let blinkTimeout;
     const nextBlink = () => {
       blinkTimeout = setTimeout(() => {
+        if (Math.random()<0.4){
+          blinkAmount.current  = 0.6;
+        } else {
+          blinkAmount.current = 1.0;
+        }
         setBlink(true);
         setTimeout(() => {
           setBlink(false);
@@ -565,6 +571,7 @@ useEffect(()=>{
     {console.log(avatarDefinition['name'])}
        { avatarDefinition['name'] === 'AVATURNMATT' && <AvaturnMatt group={group} nodes={nodes} materials={materials} props =  {props}></AvaturnMatt>}
        { avatarDefinition['name'] === 'AFROMALE' && <AfroMale group={group} nodes={nodes} materials={materials} props =  {props}></AfroMale>}
+       { avatarDefinition['name'] === 'MATTSHEAD' && <MattsHead group={group} nodes={nodes} materials={materials} props =  {props}></MattsHead>}
    </>
   );
 }

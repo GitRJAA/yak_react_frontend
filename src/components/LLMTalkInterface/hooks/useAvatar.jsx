@@ -13,6 +13,7 @@ export const AvatarProvider = ({children}) => {
     // Collection of all pre-made avatars models and their animations.
     const avatarCollection = {
         AVATURNMATT: {"name":"AVATURNMATT","model":'/models/AvaturnMatt/AvaturnMattv2.glb',"animations":'/models/AvaturnMatt/AvaturnMattAnimationsv3.glb'},
+        MATTSHEAD: {"name":"MATTSHEAD","model":'/models/AvaturnMatt/MattsHead.glb',"animations":'/models/AvaturnMatt/AvaturnMattAnimationsv3.glb'},
         AFROMALE: {"name":"AFROMALE","model":"/models/AfroMale/AfroMale.glb","animations":"/models/AfroMale/AfroMaleAnimationsv3.glb"},
         CARTOONMATT: {"name":"CARTOONMATT","model":"/models/Matt/Matt.glb","animations":"/models/Matt/MattAnimations.glb"}
     }

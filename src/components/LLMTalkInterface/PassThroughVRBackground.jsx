@@ -5,15 +5,20 @@ import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import ZoomOutIcon from '@mui/icons-material/ZoomOut';
 import FullscreenIcon from '@mui/icons-material/Fullscreen';
 import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
+import VideocamIcon from '@mui/icons-material/Videocam';
+import VideocamOffIcon from '@mui/icons-material/VideocamOff';
+import CameraIcon from '@mui/icons-material/Camera';
 
 import '../MenuComponents/CameraCapture.css'
 import './YakAvatar.css'
 
 
 const PassThroughVRBackground = ({onToggleFullscreen, isFullscreen}) => {
-    const [stream, setStream] = useState(null);
-    const videoRef = useRef(null);
+    const [stream, setStream] = useState(null);  //State variable to store the stream (video camera object) so that it doesn't get garbage collected.
+    const videoRef = useRef(null);  // refrernce to the <video> tag instance.
     const [zoomLevel, setZoomLevel] = useState(1);
+    const [videoIsOn,setVideoIsOn] = useState(true);
+
  
     // Camera selector
     const ENVIRONMENT_FACING = 'environment';
@@ -46,7 +51,7 @@ const PassThroughVRBackground = ({onToggleFullscreen, isFullscreen}) => {
 
         try {
             const currentStream = await navigator.mediaDevices.getUserMedia(constraints);
-            setStream(currentStream);
+            setStream(currentStream);  
             if (videoRef.current) {
                 videoRef.current.srcObject = currentStream;
             }
@@ -113,11 +118,36 @@ const PassThroughVRBackground = ({onToggleFullscreen, isFullscreen}) => {
         onToggleFullscreen();
     }
 
+    const handleVideoOff = async () =>{
+      if (videoIsOn) { 
+        setVideoIsOn(false);     
+            if (stream) {
+              stream.getTracks().forEach(track => track.stop());
+              videoRef.current.srcObject = null; // release the video object
+          }
+        } else {
+            setVideoIsOn(true);
+            initializeCamera();
+            debugger;
+            videoRef.current.play();  // On initial load video autoplays
+        }
+
+    }
+
     return (      
             <>
               <video ref={videoRef} autoPlay playsInline className="avatar-passthrough-video"></video>
               
                 <div className="avatar-passthrough-controls">
+                    <IconButton className='margin-all-2' color="light-gray" aria-label="" component="span" onClick={handleVideoOff} sx = {{ 
+                        backgroundColor: '#FFFFFF', 
+                        '&:hover':{
+                            backgroundColor: 'lightgray'
+                        }
+                        }}>
+                          { videoIsOn ? <VideocamIcon fontSize='large' /> : <VideocamOffIcon fontSize='large' /> }
+                      </IconButton>
+                                     
                     <IconButton className='margin-all-2' color="light-gray" aria-label="switch camera" component="span" onClick={handleCameraSwitch} sx = {{ 
                         backgroundColor: '#FFFFFF', 
                         '&:hover':{
