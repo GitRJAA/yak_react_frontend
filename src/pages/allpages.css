@@ -1,6 +1,7 @@
 .allpages {
     max-width: 1024px;
     margin:auto;
+    width: 100%;
 }
 
 .my-component-container {
@@ -12,4 +13,41 @@
 
 .working_area {
     width: 80%
+}
+
+.margin5topbottom {
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+.margin-top-8 {
+    margin-top: 8px;
+}
+
+.margin-all-2 {
+    margin: 2px;
+}
+
+.fullscreen {
+  position: fixed;
+}
+
+.non-fullscreen {
+    position: relative;
+}
+
+.menu-controls {
+    display: flex;
+    flex-direction: column;
+    width:100%;
+    align-items: center;
+    justify-content: center;
+
+}
+.hidden-menu-controls {
+    position: fixed;
+    display: flex;
+    flex-direction: column;
+    width:100%;
+    align-items: center;
 }

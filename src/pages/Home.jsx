@@ -1,22 +1,25 @@
-import YakAvatar from "../components/YakAvatar/YakAvatar";
+import { useState, useContext, useRef } from "react";
+import { useLocation } from "react-router-dom";
+import { AppContext } from "../api/services/AppContext";
+
+import { AvatarProvider } from "../components/LLMTalkInterface/hooks/useAvatar.jsx";
 import WebRTCSTT from "../components/WebRTCSTT/WebRTCSTT"
 import MenuIDSelector from "../components/MenuIDSelector/MenuIDSelector";
-import StreamingTextCanvas from "../components/StreamingTextCanvas/StreamingTextCanvas";
-
-import LLMInterface from "../components/LLMInterface/LLMInterface";
+import StreamingTextCanvas from "../components/Canvas/StreamingTextCanvas.jsx";
 import LLMTalkInterface from "../components/LLMTalkInterface/LLMTalkInterface";
+import { getLastResponse } from "../api/services/Utilities";
 
 import { createAgentSession } from "../api/services/AppStartup.js";
 
-import { useState, useContext, useRef } from "react";
-import { useLocation } from "react-router-dom";
-
-import { AppContext } from "../api/services/AppContext";
-import { getLastResponse } from "../api/services/Utilities";
-
 import { NULL_MENU } from "../data/GlobalConstants.jsx";
 
+import { Loader } from "@react-three/drei";
+import { Suspense } from "react";
+
 import './allpages.css'
+import '../components/LLMTalkInterface/YakAvatar.css'
+import { Avatar } from "../components/LLMTalkInterface/Avatar.jsx";
+
 
 const Home = () => {
 
@@ -36,7 +39,12 @@ const Home = () => {
     const location = useLocation();
     const {override_menu_id} = location.state ||  {};
 
-    const [avatarIcon, setAvatarIcon] = useState(process.env.REACT_APP_NOT_LISTENING_ICON);
+    const [isFullScreen, setIsFullScreen] = useState(false);
+
+    const toggleFullScreen = async () => {
+      setIsFullScreen(!isFullScreen);
+    };
+
 
     if (override_menu_id){
         // If override_menu_id is set, then we were sent here from the 'run' command on the text editor page
@@ -61,6 +69,9 @@ const Home = () => {
         //setResponseText('');
         console.log(`text converted ${text}`)
     }
+    const handleRecorderStatusChange = async () => {
+
+    }
     
     const handleAudioStreamDone = async () => {
         // Get the full response and paste it into the respons box.
@@ -71,14 +82,6 @@ const Home = () => {
         .catch ((error)=> console.log(error))
 
         console.log('Stream done');
-    }
-
-    const handleRecorderStatusChange = (status) => {
-        if (status === 'paused' || status ==='stopped'){
-            setAvatarIcon(process.env.REACT_APP_NOT_LISTENING_ICON)
-        } else {
-            setAvatarIcon(process.env.REACT_APP_LISTENING_ICON)
-        }
     }
 
     /*
@@ -96,8 +99,7 @@ const Home = () => {
         }
       }
   
-      const createAgent = (menuID) => {
-        
+      const createAgent = (menuID) => {       
           //create modal popup because its going to take a while to set up agent and make websocket connection.
   
           //create yak_agent with the currently selected menu.
@@ -117,22 +119,29 @@ const Home = () => {
 
     return (
     <div className="home allpages">
-        <MenuIDSelector onSelectedMenuID = {handleMenuSelectionChanged} defaultMenuID = {override_menu_id} />
-
-        <WebRTCSTT onSpeechConverted = {handleConvertedSpeech} 
-                    onConversionDone = {handleConversionDone}
-                    onRecorderStatusChange = {handleRecorderStatusChange} 
-                    token = {tempSttToken}
-                    autoStart = {autoStart.current} />
-
-        <StreamingTextCanvas text={streamingConvertedText} height="2" label="you"/>
-        {/* <LLMInterface session_id = {sessionID} prompt={convertedSpeechText} onChunkAvailable={handleConvertedSpeech}  onDone={handleAudioStreamDone} /> */}
-
-        <LLMTalkInterface session_id={sessionID} prompt={convertedSpeechText} onDone={handleAudioStreamDone} />
-        <div className="avatar-panel" >
-            <YakAvatar icon={avatarIcon} />
-        </div>
-        <StreamingTextCanvas text = {responseText} height="10" label="me"/>
+        <AvatarProvider>
+        <Loader />
+            <Suspense>
+                <div className={`${isFullScreen ? 'hidden-menu-controls': 'menu-controls'}`}>
+                    <WebRTCSTT onSpeechConverted = {handleConvertedSpeech} 
+                                onConversionDone = {handleConversionDone}
+                                onRecorderStatusChange = {handleRecorderStatusChange} 
+                                token = {tempSttToken}
+                                autoStart = {autoStart.current} />
+                    <MenuIDSelector onSelectedMenuID = {handleMenuSelectionChanged} defaultMenuID = {override_menu_id} />
+                </div>
+                <StreamingTextCanvas text={streamingConvertedText} height="2" label="you" zIndex='1005'/>
+                {/* <LLMInterface session_id = {sessionID} prompt={convertedSpeechText} onChunkAvailable={handleConvertedSpeech}  onDone={handleAudioStreamDone} /> */}
+                <div className={`${isFullScreen ? 'avatar-full-screen' :'avatar-passthrough-container margin5topbottom'}`}>
+                    <LLMTalkInterface session_id={sessionID} 
+                                    prompt={convertedSpeechText} 
+                                    onToggleFullscreen={toggleFullScreen} 
+                                    isFullscreen={isFullScreen} 
+                                    onDone={handleAudioStreamDone} />
+                </div>
+                <StreamingTextCanvas text = {responseText} height="10" label="me" zIndex='0'/>
+            </Suspense>
+        </AvatarProvider>
     </div>
     )
 }
